@@ -1,0 +1,31 @@
+---
+title: "Práctica 2: Booking Data Cleaning"
+output:
+  pdf_document: default
+  html_document: default
+date: "2022-12-24"
+author: "Gerard Carrera and Guillem Rochina"
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## DESCRIPCIÓN DEL DATASET
+
+```{r cars}
+booking <- read.csv("hotels_data.csv")
+summary(booking)
+```
+
+## INTEGRACIÓN Y SELECCIÓN
+
+```{r pressure, echo=FALSE}
+head(booking, 5)
+```
+
+## LIMPIEZA DE LOS DATOS
+
+## ANÁLISIS DE LOS DATOS
+
+## RESOLUCIÓN DEL PROBLEMA
