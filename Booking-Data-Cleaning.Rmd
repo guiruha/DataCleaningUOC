@@ -1,31 +1,124 @@
 ---
-title: "Práctica 2: Booking Data Cleaning"
+title: 'Práctica 2: Booking Data Cleaning'
+author: "Gerard Alcalde and Guillem Rochina"
+date: "2022-12-24"
 output:
+  word_document: default
   pdf_document: default
   html_document: default
-date: "2022-12-24"
-author: "Gerard Carrera and Guillem Rochina"
 ---
 
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
+options(tinytex.verbose = TRUE)
+library(dplyr)
+library(ggplot2)
+library(tidyr)
+library(lubridate)
+library(stringr)
 ```
 
 ## DESCRIPCIÓN DEL DATASET
 
-```{r cars}
+```{r}
 booking <- read.csv("hotels_data.csv")
 summary(booking)
 ```
 
 ## INTEGRACIÓN Y SELECCIÓN
 
-```{r pressure, echo=FALSE}
-head(booking, 5)
+We could add flights data for a number of reasons:
+
+* An higher number of flights in a month might increase the searches of hotels near the airport.
+* A higher number of flights in a month indicates more international tourism (rather than just national tourism). A kind of tourism that could be looking for hotels with different characteristics than national tourists.
+* A higher number of flights in a month indicates more general tourism, which may influence the promotion strategies and offers of certain hotels, influencing in the final analysis their position in the Booking search engine.
+
+```{r}
+flights <- read.csv("avia_tf_apal_linear.csv.gz")
+summary(flights)
 ```
+
+```{r}
+proc_flights <- flights %>% 
+        # Código OACI/ICAO: Barcelona --> ES_LEBL; Valencia --> ES_LEVC; Madrid: ES_LEMD
+        filter(rep_airp %in% c("ES_LEBL", "ES_LEVC", "ES_LEMD")) %>% 
+        filter(tra_meas == "PAS_CRD") %>%
+        filter(freq == "M") %>%
+        separate(TIME_PERIOD, c("YEAR", "MONTH"), sep = "-") %>%
+        filter(YEAR %in% c("2022", "2021", "2020", "2019", "2018") & MONTH %in% c("03", "06", "12")) %>%
+        filter(airline == "TOTAL") %>%
+        mutate(month_name = ifelse(MONTH == "03", "March", ifelse(MONTH == "06", "June", "December")),
+               city_airp = ifelse(rep_airp == "ES_LEBL", "Barcelona", ifelse(rep_airp == "ES_LEVC", "Valencia", "Madrid"))) %>%
+        group_by(rep_airp, month_name) %>%
+        mutate(mean_fligths = mean(OBS_VALUE)) %>%
+        ungroup() %>%
+        select(c(city_airp, month_name, mean_fligths))
+
+final_flights <- unique(proc_flights)
+```
+
+```{r}
+booking <- booking %>%
+  separate(check.in, c(NA, "month_in", NA), sep = "-", remove = FALSE) %>%
+  merge(final_flights, by.x = c("city", "month_in"), by.y = c("city_airp", "month_name"))
+```
+
 
 ## LIMPIEZA DE LOS DATOS
 
+```{r}
+booking <- booking %>%
+  separate(hotel_coordinates, c("latitude", "longitude"), sep = ",")
+```
+
+```{r}
+columns <-  c("staff_score", "facilities_score", "cleanliness_score", "comfort_score", "value_for_money_score", "location_score", "free_wifi_score")
+
+booking <- booking %>%
+  separate(hotel_scores, c(NA, "staff_score", "facilities_score", "cleanliness_score", "comfort_score", "value_for_money_score", "location_score", "free_wifi_score"), sep = ",")
+
+
+booking[columns] <- apply(booking[columns], 2, readr::parse_number)
+```
+
+```{r}
+booking <- booking %>%
+  separate(check.in, c(NA, "month_in", NA), sep = "-", remove = FALSE) %>%
+  separate(check.out, c(NA, "month_out", NA), sep = "-", remove = FALSE) %>%
+  separate(check.in, c("day", "month", "year"), sep = "-") %>%
+  mutate(month = ifelse(month == "March", "03", ifelse(month == "June", "06", "12"))) %>%
+  unite("check_in", c(day, month, year), sep = "-") %>%
+  separate(check.out, c("day", "month", "year"), sep = "-") %>%
+  mutate(month = ifelse(month == "March", "03", ifelse(month == "June", "06", "12"))) %>%
+  unite("check_out", c(day, month, year), sep = "-")
+
+booking["check_in"] <- as.Date.character(booking$check_in, "%d-%m-%Y")
+booking["check_out"] <- as.Date(booking$check_out, "%d-%m-%Y")
+```
+
+```{r}
+Sys.setlocale('LC_ALL', 'C')
+booking <- booking %>%
+  extract(address, c("postal_code"), regex = "( [0-9]* )")
+```
+```{r}
+feature_list <- c("('Free Wifi')", "('Air conditioning')", "('24-hour front desk')", "('Safe')", "('Heating')", "('Elevator')", "('Private Bathroom')", "('Non-smoking rooms')", "('Aparments')", "('City view')","('Kitchen')", "('Pet Friendly')", "('Swimming pool')", "('Balcony')")
+
+for (feature in feature_list){
+  col_name <- str_replace(str_replace(str_to_lower(str_extract(feature, "([A-Z][a-z]*( |-)?[A-Z]?[a-z]* ? ?[a-z]*)")), " ", "_"), "-", "_")
+  booking <- booking %>%
+  extract(features, c(col_name), regex = feature, remove = FALSE) %>%
+  mutate_(.dots = setNames(list(paste0("as.integer(!is.na(",col_name,"))")), col_name))
+}
+```
+
+```{r}
+
+booking["stay_duration"] <- difftime(booking$check_out, booking$check_in, units = "days")
+
+```
+
 ## ANÁLISIS DE LOS DATOS
+
 
 ## RESOLUCIÓN DEL PROBLEMA
