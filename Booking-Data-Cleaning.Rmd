@@ -11,112 +11,233 @@ output:
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
 options(tinytex.verbose = TRUE)
-library(dplyr)
-library(ggplot2)
-library(tidyr)
-library(lubridate)
-library(stringr)
+suppressWarnings(library(dplyr))
+suppressWarnings(library(ggplot2))
+suppressWarnings(library(tidyr))
+suppressWarnings(library(lubridate))
+suppressWarnings(library(stringr))
 ```
 
-## DESCRIPCIÓN DEL DATASET
+## 1. DESCRIPCIÓN DEL DATASET
+
+### ¿Por qué es importante y qué pregunta/problema pretende responder?
+
+#### 1.1. Descripción general
+
+El conjunto de datos ha tratar es el obtenido como resultado de la práctica anterior de Web Scraping. El dataset presenta los datos e indicadores más relevantes de cada uno de los hoteles encontrados en función de determinados criterios de búsqueda (ciudad, fecha de check-in, fecha de check-out, número de adultos, niños y habitaciones). En este dataset en concreto presentamos datos para distintas fechas (diciembre, marzo y junio), ciudades (barcelona, madrid, valencia), número de adultos, niños y habitaciones a fin de tener una muestra más amplia e informativa que la que nos daría una búsqueda con tan sólo unos parámetros fijos.
+
+A continuación, se realiza una breve descripción de cada una de las variables disponibles antes de realizar la limpieza:
+
+* **Name (str)**: Nombre del hotel.
+* **City (str)**: Nombre de la ciudad donde se realiza la búsqueda.
+* **Check-in (str)**: Fecha de entrada al hotel.
+* **Check-out (str)**: Fecha de salida del hotel.
+* **Adults (int)**: Nº de adultos para los que se realiza la reserva.
+* **Num_rooms (int)**: Nº de habitaciones reservadas.
+* **Address (str)**: Dirección postal del hotel, nombre de calle, barrio de la ciudad, código postal, etc.
+* **Hotel_coordinates (str)**: Latitud y longitud de la ubicación del hotel.
+* **Hotel_score (int)**: Nota general que recibe el hotel por los usuarios.
+* **Hotel_scores (dict)**: Puntuaciones de cada una de las dimensiones que puede valorar un usuario.
+* **Hotel description (list)**: Descripción aportada por el propietario del hotel
+* **Features (list)**: Lista de servicios añadidos del hotel.
+* **Room_data (dict)**: Conjunto de diccionarios que recogen las características de cada una de las habitaciones disponibles en el hotel.
+* **Page_count (int)**: Posición en la que ha aparecido el hotel en el buscador.
+* **Current_page (int)**: Página en la que ha aparecido el hotel en el buscador.
+
+#### 1.2. Importancia y problema a responder
+
+Aparecer en los primeros resultados de una búsqueda de un usuario por internet se ha convertido en los últimos años en una de las preocupaciones principales de cualquier negocio que busca hacerse un hueco en el mundo digital. Este fenómeno explica la proliferación de herramientas como el SEO y el SEM, mediante las cuales se intenta innovar (más allá del pago de tarifas para aparecer en las primeras páginas de búsqueda) a fin de lograr un mejor “posicionamiento” en buscadores como Google o Bing. El negocio hotelero no es una excepción en este caso.
+
+No obstante, el uso de dichas herramientas no resulta útil si nos enfrentamos a un buscador dentro de una página web, como el caso que nos ocupa con Booking.com. ¿Qué hacer entonces? ¿Cómo mejorar el posicionamiento dentro de la web?
+
+En la web del metabuscador de alojamientos encontramos que define a dichas posiciones entre los resultados como “ranking”, descrito por ellos mismos como el orden en el que se muestran los alojamientos disponibles en los resultados de búsqueda. En su blog “Booking.com Partner Hub” indican que los resultados son ordenados según la relevancia en base a las preferencias particulares de cada “cliente”, incluyendo en este caso también las “dinámicas del mercado”, el “rendimiento del alojamiento”, etc. Variable que poca información revela al interesado en que sus hoteles/alojamientos aparezcan en posiciones más “atractivas” para este.
+
+El objetivo de este dataset es obtener las características que hacen que un hotel esté mejor posicionado que otro. El posicionamiento de los hoteles suele ser algo estático y por ello con una sola lectura de la página web puede ser suficiente.
+
+En concreto, en el mismo post analizado se destaca la relevancia de revisar regularmente las “condiciones flexibles”, los comentarios, los precios externos, las promociones, la puntuación de la página del alojamiento… a fin de lograr escalar puestos en la clasificación.
+
+Dado el impacto que puede tener en el negocio de un hotel el aparecer en posiciones más inmediatas del buscador, el presente proyecto pretende ser la continuación de la práctica 1, ofreciendo un análisis inferencial que destaque que factores tienen un mayor peso en el posicionamiento de un alojamiento en Booking.com.
+
+## 2. LIMPIEZA DE LOS DATOS
+
+A fin de iniciar el proceso de limpieza de datos, en primer lugar se debe realizar la lectura del fichero csv que obtuvimos en la práctica anterior. Como resultado de la función de R-base "read.csv" obtenemos un objeto data.frame, que manipularemos en la presente sección.
 
 ```{r}
-booking <- read.csv("hotels_data.csv")
+# Lectura y breve descripción de los datos
+
+booking <- read.csv("hotels_data.csv", header = TRUE)
 summary(booking)
 ```
 
-## INTEGRACIÓN Y SELECCIÓN
-
-We could add flights data for a number of reasons:
-
-* An higher number of flights in a month might increase the searches of hotels near the airport.
-* A higher number of flights in a month indicates more international tourism (rather than just national tourism). A kind of tourism that could be looking for hotels with different characteristics than national tourists.
-* A higher number of flights in a month indicates more general tourism, which may influence the promotion strategies and offers of certain hotels, influencing in the final analysis their position in the Booking search engine.
+Como observamos tanto con la función "summary" como con la función "class" nos muestran que a cada variable se le ha asignado o bien la clase de entero o la de string. En concreto, muchas de las variables interpretadas como string se tratan de diccionarios y listas, factor que deberemos tener en cuenta a la hora de trabajar con estas variables.
 
 ```{r}
+# Tipo de dato asignado a cada variable
+
+sapply(booking, function(x) class(x))
+```
+
+#### 2.1. Transformación de las variables en el formato adecuado
+
+Como se ha comentado, existen algunas variables que presentan todavía una estructura no válida para tratarlos estadísticamente o introducirlos en un modelo de data mining o machine learning. En esta sección nos encargamos de tratar dichas columnas a fin de obtener nuevas variables con un formato adecuado, eliminando a su vez cualquier informaión que no nos sea de utilidad.
+
+En primer lugar, cabe destacar que no todas las columnas que tenemos disponibles en el dataset nos ofrecen información relevante para nuestro problema. Por tanto, a fin de reducir la dimensionalidad de este, nos encargamos de eliminar las columnas con información redundante.
+
+```{r}
+# Seleccionamos con la función "select" de dplyr todas las columnas excepto name y search_date, que nos van a ser de poca utilidad.
+
+booking <- booking %>%
+  select(-c("name", "search_date"))
+```
+
+La columna hotel_coordinates incluye tanto los valores de latitud como los de longitud, separados por una coma. Dado que ambos dos valores nos indica información distinta, pues la latitud nos proporcionar información de la posición en dirección norte o sur del ecuador y la longitud información de la posición en dirección este u oeste, en este caso hemos optado por separarlos en dos columnas distintas.
+
+```{r}
+# Separamos los valores de la variable hotel coordinates en dos nuevas columnas, latitud y longitud
+# La columna hotel_coordinates se elimina en el proceso
+
+booking <- booking %>%
+  separate(hotel_coordinates, c("latitude", "longitude"), sep = ",")
+```
+
+Por su parte, "hotel_scores" alberga diccionarios en cada uno de los registros. Cada diccionario consta del nombre de cada dimensión (caracterísitca a valorar) como clave y la valoración que recibe como valor. Dado que R lo ha interpretado como un string, nuestro enfoque en su limpieza se ha basado en separar la información con comas y, una vez obtenidas todas las columnas resultantes, extraer los datos numéricos de cada registro para quedarnos solo con los scores de cada dimensión.
+
+```{r}
+# Definimos un vector con los nombres de las columnas a crear
+
+columns <-  c("staff_score", "facilities_score", "cleanliness_score", "comfort_score", "value_for_money_score", "location_score", "free_wifi_score")
+
+# Separamos los strings (diccionarios) en función de las comas y creamos las columnas correspondientes. La primera columna creada es una NA porque todos los primeros registros en cada diccionario están vacíos (por un fallo en la extracción de datos). Estableciendo la columna como NA, indicamos a la función separate que ignore dichos datos y no cree columna alguna para ellos.
+
+booking <- booking %>%
+  separate(hotel_scores, c(NA, "staff_score", "facilities_score", "cleanliness_score", "comfort_score", "value_for_money_score", "location_score", "free_wifi_score"), sep = ",")
+
+# Extraemos los valores numéricos de cada columna con la función del paquete readr, "parse_number"
+
+booking[columns] <- apply(booking[columns], 2, readr::parse_number)
+```
+
+Dado que de las fechas tan sólo nos interesa el mes en el que se realiza la reserva (un alojamiento con unas características determinadas pdría estar mejor posicionado en un determinado mes que en otro) procedemos a extraer dicha información de las variables "check-in" y "check-out". No obstante, por el momento no eliminamos dichas columnas y las transformamos a formato date por si a caso podemos hacer uso de ellas más adelante.
+
+```{r}
+booking <- booking %>%
+  # Separamos el nombre del mes del resto de elementos del registro para check_in y check_out
+  separate(check.in, c(NA, "month_in", NA), sep = "-", remove = FALSE) %>%
+  separate(check.out, c(NA, "month_out", NA), sep = "-", remove = FALSE) %>%
+  # Modificamos la columna check_in para que tenga el formato de fecha normal
+  separate(check.in, c("day", "month", "year"), sep = "-") %>%
+  mutate(month = ifelse(month == "March", "03", ifelse(month == "June", "06", "12"))) %>%
+  unite("check_in", c(day, month, year), sep = "-") %>%
+  # Modificamos la columna check_out para que tenga el formato de fecha normal
+  separate(check.out, c("day", "month", "year"), sep = "-") %>%
+  mutate(month = ifelse(month == "March", "03", ifelse(month == "June", "06", "12"))) %>%
+  unite("check_out", c(day, month, year), sep = "-")
+
+# Transformamos las columnas check_in y check_out al format date
+booking["check_in"] <- as.Date.character(booking$check_in, "%d-%m-%Y")
+booking["check_out"] <- as.Date(booking$check_out, "%d-%m-%Y")
+```
+
+De la columna address tan sólo nos interesa el código postal (el barrio no se incluye en todos los registros a diferencia del CP, así que hemos optado por quedarnos con estos valores), por lo que extraemos dicha información para crear una nueva columna llamada "postal_code", eliminando la información redundante en el proceso.
+
+```{r}
+# Hemos tenido que cambiar esta función para que el extract no diera problemas
+Sys.setlocale('LC_ALL', 'C')
+# Extraemos los valores de codigo postal de la columna addres.
+booking <- booking %>%
+  extract(address, c("postal_code"), regex = "( [0-9]* )")
+```
+
+Los features, entendidos como servicios adicionales más allá de la propia habitación, fueron guardados como una lista. No obstante, de nuevo nos encontramos como R lo ha identificado como string. Es por ello por lo que realizamos un tratamiento similar al de la columna de scores. En este caso creamos tantas variables dummy (columnas dicotómicas con valores de 1, en caso de que el feature exista en dicho registro, o 0, en caso de que no existe) como servicios adicionales de hotel consideramos interesantes.
+
+```{r}
+# Definimos las features que consideramos que son interesantes. Utilizamos este formato para filtrar por expresión regular.
+feature_list <- c("('Free Wifi')", "('Air conditioning')", "('24-hour front desk')", "('Safe')", "('Heating')", "('Elevator')", "('Private Bathroom')", "('Non-smoking rooms')", "('Aparments')", "('City view')","('Kitchen')", "('Pet Friendly')", "('Swimming pool')", "('Balcony')")
+
+# Creamos un bucle en el que se recorre cada elemento de la lista de features
+for (feature in feature_list){
+  # Se eliminan los parentésis y comillas de la variable local feature para crear el nombre de la columna.
+  col_name <- str_replace(str_replace(str_to_lower(str_extract(feature, "([A-Z][a-z]*( |-)?[A-Z]?[a-z]* ? ?[a-z]*)")), " ", "_"), "-", "_")
+  booking <- booking %>%
+  # Extraemos el nombre del feature de cada uno de los registros (strings). En caso de que no encuentre ningún valor devuelve un NA.
+  extract(features, c(col_name), regex = feature, remove = FALSE) %>%
+  # Transformamos la columna que acaba de ser creada para que indique con un 1 si el registro tenia dicho servicio y 0 si el valor era NA (no tenida dicho servicio)
+  mutate_(.dots = setNames(list(paste0("as.integer(!is.na(",col_name,"))")), col_name))
+}
+
+# Eliminamos la columna de features para finalizar
+booking <- booking %>%
+  select(-c("features"))
+```
+
+#### 2.2. Ceros y elementos vacíos
+
+```{r}
+booking <- booking[booking$latitude != "",]
+```
+
+```{r}
+booking <- booking[booking$latitude != "",]
+```
+
+```{r}
+booking %>%
+  distinct() %>%
+  group_by(city, month_in) %>%
+  count()
+```
+
+#### 2.3. Valores extremos
+
+#### 2.4. Exportación de los datos postprocesados
+
+## 3. INTEGRACIÓN Y SELECCIÓN
+
+En primer lugar, hemos obtado por añadir datos de vuelos por varias razones:
+
+* Un mayor número de vuelos en un mes podría aumentar las búsquedas de hoteles cerca del aeropuerto.
+* Un mayor número de vuelos en un mes indica más turismo internacional (en lugar de sólo turismo nacional). Un tipo de turismo que podría estar buscando hoteles con características diferentes a los turistas nacionales.
+* Un mayor número de vuelos en un mes indica más turismo general, lo que puede influir en las estrategias de promoción y ofertas de determinados hoteles, influyendo en última instancia en su posición en el buscador Booking.
+
+```{r}
+# Leemos los datos de vuelos
 flights <- read.csv("avia_tf_apal_linear.csv.gz")
 summary(flights)
 ```
 
+Para añadir dicha información hacemos un tratamiento de los datos obtenidos en Eurostat a fin de obtener una media de vuelos por mes para los últimos 5 años. Una vez obtenidos, tan solo debemos hacer un merge con nuestro dataset original.
+
 ```{r}
 proc_flights <- flights %>% 
+        # Filtramos para quedarnos solo con los aeropuertos de interés
         # Código OACI/ICAO: Barcelona --> ES_LEBL; Valencia --> ES_LEVC; Madrid: ES_LEMD
         filter(rep_airp %in% c("ES_LEBL", "ES_LEVC", "ES_LEMD")) %>% 
+        # Filtramos para quedarnos solo con los datos de carga de pasajeros
         filter(tra_meas == "PAS_CRD") %>%
+        # Nos interesa solo los datos mensuales, así que filtramos por ellos
         filter(freq == "M") %>%
         separate(TIME_PERIOD, c("YEAR", "MONTH"), sep = "-") %>%
+        # Nos quedamos solo con los últimos 5 años y los meses de Marzo, Junio y Diciembre
         filter(YEAR %in% c("2022", "2021", "2020", "2019", "2018") & MONTH %in% c("03", "06", "12")) %>%
+        # No nos interesa los datos por aerolínea, solo los generales
         filter(airline == "TOTAL") %>%
+        # Modificamos la columna de MONTH para tener los nombres del mes y cambiamos el código del aeropuerto por el nombre de la ciudad
         mutate(month_name = ifelse(MONTH == "03", "March", ifelse(MONTH == "06", "June", "December")),
                city_airp = ifelse(rep_airp == "ES_LEBL", "Barcelona", ifelse(rep_airp == "ES_LEVC", "Valencia", "Madrid"))) %>%
+        # Agrupamos por ciudad y mes y calculamos la media de vuelos.
         group_by(rep_airp, month_name) %>%
         mutate(mean_fligths = mean(OBS_VALUE)) %>%
         ungroup() %>%
         select(c(city_airp, month_name, mean_fligths))
 
+# Nos quedamos con los registros únicos
 final_flights <- unique(proc_flights)
-```
 
-```{r}
+# Hacemos un merge con bookings
 booking <- booking %>%
-  separate(check.in, c(NA, "month_in", NA), sep = "-", remove = FALSE) %>%
   merge(final_flights, by.x = c("city", "month_in"), by.y = c("city_airp", "month_name"))
 ```
 
-
-## LIMPIEZA DE LOS DATOS
-
-```{r}
-booking <- booking %>%
-  separate(hotel_coordinates, c("latitude", "longitude"), sep = ",")
-```
-
-```{r}
-columns <-  c("staff_score", "facilities_score", "cleanliness_score", "comfort_score", "value_for_money_score", "location_score", "free_wifi_score")
-
-booking <- booking %>%
-  separate(hotel_scores, c(NA, "staff_score", "facilities_score", "cleanliness_score", "comfort_score", "value_for_money_score", "location_score", "free_wifi_score"), sep = ",")
-
-
-booking[columns] <- apply(booking[columns], 2, readr::parse_number)
-```
-
-```{r}
-booking <- booking %>%
-  separate(check.in, c(NA, "month_in", NA), sep = "-", remove = FALSE) %>%
-  separate(check.out, c(NA, "month_out", NA), sep = "-", remove = FALSE) %>%
-  separate(check.in, c("day", "month", "year"), sep = "-") %>%
-  mutate(month = ifelse(month == "March", "03", ifelse(month == "June", "06", "12"))) %>%
-  unite("check_in", c(day, month, year), sep = "-") %>%
-  separate(check.out, c("day", "month", "year"), sep = "-") %>%
-  mutate(month = ifelse(month == "March", "03", ifelse(month == "June", "06", "12"))) %>%
-  unite("check_out", c(day, month, year), sep = "-")
-
-booking["check_in"] <- as.Date.character(booking$check_in, "%d-%m-%Y")
-booking["check_out"] <- as.Date(booking$check_out, "%d-%m-%Y")
-```
-
-```{r}
-Sys.setlocale('LC_ALL', 'C')
-booking <- booking %>%
-  extract(address, c("postal_code"), regex = "( [0-9]* )")
-```
-```{r}
-feature_list <- c("('Free Wifi')", "('Air conditioning')", "('24-hour front desk')", "('Safe')", "('Heating')", "('Elevator')", "('Private Bathroom')", "('Non-smoking rooms')", "('Aparments')", "('City view')","('Kitchen')", "('Pet Friendly')", "('Swimming pool')", "('Balcony')")
-
-for (feature in feature_list){
-  col_name <- str_replace(str_replace(str_to_lower(str_extract(feature, "([A-Z][a-z]*( |-)?[A-Z]?[a-z]* ? ?[a-z]*)")), " ", "_"), "-", "_")
-  booking <- booking %>%
-  extract(features, c(col_name), regex = feature, remove = FALSE) %>%
-  mutate_(.dots = setNames(list(paste0("as.integer(!is.na(",col_name,"))")), col_name))
-}
-```
-
-```{r}
-
-booking["stay_duration"] <- difftime(booking$check_out, booking$check_in, units = "days")
-
-```
 
 ## ANÁLISIS DE LOS DATOS
 
