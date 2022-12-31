@@ -16,6 +16,8 @@ suppressWarnings(library(ggplot2))
 suppressWarnings(library(tidyr))
 suppressWarnings(library(lubridate))
 suppressWarnings(library(stringr))
+suppressWarnings(library(knitr))
+suppressWarnings(library(VIM))
 ```
 
 ## 1. DESCRIPCIÓN DEL DATASET
@@ -74,7 +76,8 @@ Como observamos tanto con la función "summary" como con la función "class" nos
 ```{r}
 # Tipo de dato asignado a cada variable
 
-sapply(booking, function(x) class(x))
+res <- sapply(booking, function(x) class(x))
+kable(data.frame(var=names(res), clase=as.vector(res)))
 ```
 
 #### 2.1. Transformación de las variables en el formato adecuado
@@ -172,22 +175,60 @@ booking <- booking %>%
 
 #### 2.2. Ceros y elementos vacíos
 
+Dando paso a el tratamiento de ceros y elementos vacios, lo primero que debemos hacer es identificar aquellas variables en las que encontramos valores faltantes. Como observamos, "postal_code" (19), "longitude" (16), "hotel_score" (8) y el resto de variables relacionadas con los scores (60) presentan valores faltantes.
+
 ```{r}
-booking <- booking[booking$latitude != "",]
+sapply(booking, function(y) sum(length(which(is.na(y)))))
+  
 ```
 
 ```{r}
-booking <- booking[booking$latitude != "",]
+
+head(booking[is.na(booking$postal_code),], 5)
+
+booking <- booking[!is.na(booking$postal_code),]
+  
 ```
 
 ```{r}
-booking %>%
-  distinct() %>%
-  group_by(city, month_in) %>%
-  count()
+sapply(booking, function(y) sum(length(which(is.na(y)))))
+```
+```{r}
+
+head(booking[is.na(booking$hotel_score),], 5)
+
+```
+
+```{r}
+
+tail(booking[booking$hotel_score == "-1",], 5)
+
+booking$hotel_score <- ifelse(booking$hotel_score == "-1", NA, booking$hotel_score)
+
+```
+
+```{r}
+
+booking$hotel_score <- kNN(booking)$hotel_score
+booking$staff_score <- kNN(booking)$staff_score 
+booking$facilities_score <- kNN(booking)$facilities_score
+booking$cleanliness_score <- kNN(booking)$cleanliness_score
+booking$comfort_score <- kNN(booking)$comfort_score
+booking$value_for_money_score <- kNN(booking)$value_for_money_score
+booking$location_score <- kNN(booking)$location_score
+# Do not use the same treatement
+booking$free_wifi_score <- ifelse(is.na(booking$free_wifi_score), 0, booking$free_wifi_score)
+
+```
+
+
+```{r}
+sapply(booking, function(y) sum(length(which(is.na(y)))))
 ```
 
 #### 2.3. Valores extremos
+
+Los outliers son aquellos datos extremos que dada su distancia con respecto al grueso de la distribución a priori resultan no ser congruentes si los comparamos con la población/muestra analizada. Existen varias vías para detectarlos, no obstante el método más rápdio y común se basa en el uso de boxplots, donde se detectan aquellos valores que se sitúan 1.5 veces más allá del rango intercuartílico con respecto a la mediana. Asimismo, en este trabajo también haremos uso de la función "boxplots.stats()" a fin de detectar, con un output más allá del visual, los outliers que encontramos usando boxplots.
 
 #### 2.4. Exportación de los datos postprocesados
 
