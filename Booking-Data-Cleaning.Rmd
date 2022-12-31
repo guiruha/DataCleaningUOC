@@ -3,9 +3,9 @@ title: 'Práctica 2: Booking Data Cleaning'
 author: "Gerard Alcalde and Guillem Rochina"
 date: "2022-12-24"
 output:
-  word_document: default
-  pdf_document: default
   html_document: default
+  pdf_document: default
+  word_document: default
 ---
 
 ```{r setup, include=FALSE}
@@ -101,6 +101,9 @@ La columna hotel_coordinates incluye tanto los valores de latitud como los de lo
 
 booking <- booking %>%
   separate(hotel_coordinates, c("latitude", "longitude"), sep = ",")
+
+booking$latitude <- as.numeric(booking$latitude)
+booking$longitude <- as.numeric(booking$longitude)
 ```
 
 Por su parte, "hotel_scores" alberga diccionarios en cada uno de los registros. Cada diccionario consta del nombre de cada dimensión (caracterísitca a valorar) como clave y la valoración que recibe como valor. Dado que R lo ha interpretado como un string, nuestro enfoque en su limpieza se ha basado en separar la información con comas y, una vez obtenidas todas las columnas resultantes, extraer los datos numéricos de cada registro para quedarnos solo con los scores de cada dimensión.
@@ -146,9 +149,10 @@ De la columna address tan sólo nos interesa el código postal (el barrio no se 
 ```{r}
 # Hemos tenido que cambiar esta función para que el extract no diera problemas
 Sys.setlocale('LC_ALL', 'C')
-# Extraemos los valores de codigo postal de la columna addres.
+# Extraemos los valores de codigo postal de la columna addres utilizando expressiones regulares
 booking <- booking %>%
-  extract(address, c("postal_code"), regex = "( [0-9]* )")
+  extract(address, c("postal_code"), regex = "( [0-9]{5} )", remove = FALSE)
+
 ```
 
 Los features, entendidos como servicios adicionales más allá de la propia habitación, fueron guardados como una lista. No obstante, de nuevo nos encontramos como R lo ha identificado como string. Es por ello por lo que realizamos un tratamiento similar al de la columna de scores. En este caso creamos tantas variables dummy (columnas dicotómicas con valores de 1, en caso de que el feature exista en dicho registro, o 0, en caso de que no existe) como servicios adicionales de hotel consideramos interesantes.
@@ -184,24 +188,25 @@ sapply(booking, function(y) sum(length(which(is.na(y)))))
 
 ```{r}
 
-head(booking[is.na(booking$postal_code),], 5)
+# c(1:4) es por el output de knitr, más adelante lo cambiamos.
+head(booking[is.na(booking$postal_code),c(1:4)], 5)
 
 booking <- booking[!is.na(booking$postal_code),]
   
 ```
 
 ```{r}
-sapply(booking, function(y) sum(length(which(is.na(y)))))
+sapply(booking, function(y) sum(is.na(y)))
 ```
 ```{r}
 
-head(booking[is.na(booking$hotel_score),], 5)
+head(booking[is.na(booking$hotel_score),c(1:4)], 5)
 
 ```
 
 ```{r}
 
-tail(booking[booking$hotel_score == "-1",], 5)
+tail(booking[booking$hotel_score == "-1",c(1:4)], 5)
 
 booking$hotel_score <- ifelse(booking$hotel_score == "-1", NA, booking$hotel_score)
 
@@ -221,16 +226,216 @@ booking$free_wifi_score <- ifelse(is.na(booking$free_wifi_score), 0, booking$fre
 
 ```
 
+```{r}
+sapply(booking, function(y) sum(is.na(y)))
+```
 
 ```{r}
-sapply(booking, function(y) sum(length(which(is.na(y)))))
+
+sapply(booking, function(y) sum(y == ""))
+
 ```
 
 #### 2.3. Valores extremos
 
-Los outliers son aquellos datos extremos que dada su distancia con respecto al grueso de la distribución a priori resultan no ser congruentes si los comparamos con la población/muestra analizada. Existen varias vías para detectarlos, no obstante el método más rápdio y común se basa en el uso de boxplots, donde se detectan aquellos valores que se sitúan 1.5 veces más allá del rango intercuartílico con respecto a la mediana. Asimismo, en este trabajo también haremos uso de la función "boxplots.stats()" a fin de detectar, con un output más allá del visual, los outliers que encontramos usando boxplots.
+Los outliers son aquellos datos extremos que dada su distancia con respecto al grueso de la distribución a priori resultan no ser congruentes si los comparamos con la población/muestra analizada. Existen varias vías para detectarlos, no obstante el método más rápdio y común se basa en el uso de boxplots, donde se detectan aquellos valores que se sitúan 1.5 veces más allá del rango intercuartílico con respecto a la mediana. Asimismo, en este trabajo también haremos uso de la función "boxplots.stats()" a fin de detectar, con un output más allá del visual, los outliers que encontramos usando boxplots. Dado que muchas de las variables que hemos generado en la fase de limpieza son dicotómicas, tan solo nos encargaremos de comprobar si existen valores extremos en las columnas de **num_rooms**, **latitude**, **longitude**, **hotel_score** y el resto de **scores del hotel**.
+
+```{r}
+
+ggplot(booking, aes(y = num_rooms, color = city))+
+  geom_boxplot() +
+  facet_grid(~city)
+
+boxplot.stats(booking$num_rooms)$out
+
+```
+
+```{r}
+
+ggplot(booking, aes(y = latitude))+
+  geom_boxplot(color = "red", fill = "navy")
+
+boxplot.stats(booking$latitude)$out
+
+```
+
+```{r}
+
+ggplot(booking, aes(y = longitude))+
+  geom_boxplot(color = "red", fill = "white")
+
+boxplot.stats(booking$longitude)$out
+
+```
+
+```{r}
+
+ggplot(booking, aes(y = hotel_score, color = city))+
+  geom_boxplot() +
+  facet_grid(~city)
+
+boxplot.stats(booking$hotel_score)$out
+
+```
+
+```{r}
+
+booking %>%
+  select(-c("hotel_description", "room_data")) %>%
+  filter(hotel_score <= 7.0) %>%
+  sample_n(3)
+
+```
+
+```{r}
+
+booking %>%
+  select(-c("hotel_description", "room_data")) %>%
+  filter(hotel_score == 10.0) %>%
+  sample_n(3)
+
+```
+
+```{r}
+
+ggplot(booking, aes(y = facilities_score, color = city))+
+  geom_boxplot() +
+  facet_grid(~city)
+
+boxplot.stats(booking$facilities_score)$out
+
+```
+
+```{r}
+
+booking %>%
+  select(-c("hotel_description", "room_data")) %>%
+  filter(facilities_score <= 6.5) %>%
+  sample_n(3)
+
+```
+
+```{r}
+
+ggplot(booking, aes(y = staff_score, color = city))+
+  geom_boxplot() +
+  facet_grid(~city)
+
+boxplot.stats(booking$staff_score)$out
+
+```
+
+```{r}
+
+booking %>%
+  select(-c("hotel_description", "room_data")) %>%
+  filter(staff_score <= 6.7) %>%
+  sample_n(3)
+
+```
+
+```{r}
+
+ggplot(booking, aes(y = cleanliness_score, color = city))+
+  geom_boxplot() +
+  facet_grid(~city)
+
+boxplot.stats(booking$cleanliness_score)$out
+
+```
+
+```{r}
+
+booking %>%
+  select(-c("hotel_description", "room_data")) %>%
+  filter(cleanliness_score < 7.0) %>%
+  sample_n(3)
+
+```
+
+```{r}
+
+ggplot(booking, aes(y = comfort_score, color = city))+
+  geom_boxplot() +
+  facet_grid(~city)
+
+boxplot.stats(booking$comfort_score)$out
+
+```
+
+```{r}
+
+booking %>%
+  select(-c("hotel_description", "room_data")) %>%
+  filter(comfort_score < 7.0) %>%
+  sample_n(3)
+
+```
+
+```{r}
+
+ggplot(booking, aes(y = value_for_money_score, color = city))+
+  geom_boxplot() +
+  facet_grid(~city)
+
+boxplot.stats(booking$value_for_money_score)$out
+
+```
+
+```{r}
+
+booking %>%
+  select(-c("hotel_description", "room_data")) %>%
+  filter(value_for_money_score <= 7.0) %>%
+  sample_n(3)
+
+```
+
+```{r}
+
+ggplot(booking, aes(y = location_score, color = city))+
+  geom_boxplot() +
+  facet_grid(~city)
+
+boxplot.stats(booking$location_score)$out
+
+```
+
+```{r}
+
+booking %>%
+  select(-c("hotel_description", "room_data")) %>%
+  filter(location_score < 7.0) %>%
+  sample_n(3)
+
+```
+
+```{r}
+
+ggplot(booking, aes(y = free_wifi_score, color = city))+
+  geom_boxplot() +
+  facet_grid(~city)
+
+boxplot.stats(booking$free_wifi_score)$out
+
+```
+
+```{r}
+
+booking %>%
+  select(-c("hotel_description", "room_data")) %>%
+  filter(free_wifi_score < 5.0 & free_wifi_score > 0) %>%
+  sample_n(3)
+
+```
 
 #### 2.4. Exportación de los datos postprocesados
+
+```{r}
+
+#write.csv(booking, "hotel_data_processed.csv")
+
+```
 
 ## 3. INTEGRACIÓN Y SELECCIÓN
 
@@ -282,5 +487,14 @@ booking <- booking %>%
 
 ## ANÁLISIS DE LOS DATOS
 
+Añadir:
+
+* Que scores influyen más (están más correlacionadas) con hotel_score: Esto se puede hacer mediante una regresión lineal o una simple correlación de Pearson. Antes hay que comprobar normalidad y homocedasticidad. Podemos incluir un análisis del VIF para plantear que hay scores intercorrelacionadas entre ellas (un score como combinación lineal de otras)
+
+* Comprobar si un feature influye en que se tenga una media de hotel_score mayor o menor. Esto se puede hacer con un t-test, pero hay que comprobar antes la condición de normalidad.
+
+* Para comprobar normalidad hacer uso de qqplots y el test kolmogorov-smirvo o el lilliefors.
+
+* Finalizar con una regresión logística generalizada para determinar que variables influyen en la página donde aparece el hotel y un regresión lineal múltiple. Para la regresión logística podemos hacer uso de curvas ROC y para la regresión lineal múltiple podemos hacer un backward selection en base al p-value.
 
 ## RESOLUCIÓN DEL PROBLEMA
