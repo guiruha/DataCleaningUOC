@@ -177,6 +177,112 @@ booking <- booking %>%
   select(-c("features"))
 ```
 
+Por otro lado, nos encontramos con la columna que incluye la descripción del hotel, esta descripción es muy amplia y un análisis profundo de ella requeriría de técnicas de NLP que no son el objetivo de esta práctica. No obstante, consideramos que la longitud de la descripción del hotel si que puede tener una relación con la posición en el buscador, por lo que transformaremos esta variable a una nueva variable que contenga el número total de palabras que contiene la descripción.
+
+A continuación, se procesa la columna hotel_description para obtener el número de palabras que contiene la descripción que se almacena en la nueva columna length_description y a continuación se elimina esta columna ya que no se empleará en el resto del estudio.
+
+```{r}
+# Evaluamos la longitud de la descripción del hotel
+booking$length_description <- lengths(gregexpr("\\W+", booking$hotel_description)) + 1
+
+# Eliminamos la columna hotel_description
+booking <- booking %>%
+    select(-c("hotel_description"))
+```
+
+Finalmente en la columna Room_data, se incluye mucha información referente a los tipos de habitaciones disponibles, precios, características, etc. Esta se había extraído de esta forma con el objetivo de procesarla mediante un diccionario de Python, no obstante al haber optado por un procesado con R este se complicará un poco más. En esta columna tenemos distintos datos que pueden ser muy relevantes que extraeremos, estos son:
+
+* **min_price**: Precio de la habitación más económica.
+* **suite_available**: Una de las habitaciones es de tipo suite.
+* **apartment_available**: Una de la habitaciones es de tipo apartamento.
+* **free_cancelation_available**: Alguna de las habitaciones tiene cancelación gratuita.
+
+
+```{r}
+
+# Función que encuentra el precio mínimo de la habitación dado un string con la información de las habitaciones
+find_min_price <- function(text) {
+  if (text=="{}"){
+    return(0)
+  }
+  a <- gregexpr("([0-9]*', 'room_capacity)", text)
+  
+  min_price <- NA
+  for (value in a[[1]]){
+    substring <- substr(text, value, value+20)
+    price <- as.numeric(strsplit(substring, "'")[[1]][1])
+    if (is.na(min_price)) {
+      min_price <- price
+    }
+    
+    if (price < min_price) {
+      min_price <- price
+    } 
+  }
+  return(min_price)
+}
+
+# Aplicamos la función a todos los valores
+min_price_vector <- c()
+for (i in seq(1, length(booking$room_data))) {
+  min_price_vector <- append(min_price_vector, find_min_price(booking$room_data[i]))
+}
+
+# Guardamos los resultados en una nueva columna.
+booking$min_price <- min_price_vector
+
+# Buscamos si hay una habitación en suite
+is_suite_vector <- c()
+for (i in seq(1, length(booking$room_data))) {
+  is_suite <- gregexpr("(suite)", booking$room_data[i])[[1]][1]
+  
+  if (is_suite==-1) {
+    is_suite_vector <- append(is_suite_vector, 0)
+  } else {
+    is_suite_vector <- append(is_suite_vector, 1)
+  }
+}
+
+# Guardamos los resultados en una nueva columna.
+booking$is_suite <- is_suite_vector
+
+# Buscamos si hay opción de apartamento
+is_apartment_vector <- c()
+for (i in seq(1, length(booking$room_data))) {
+  is_apartment <- gregexpr("(Apartment)", booking$room_data[i])[[1]][1]
+  
+  if (is_apartment==-1) {
+    is_apartment_vector <- append(is_apartment_vector, 0)
+  } else {
+    is_apartment_vector <- append(is_apartment_vector, 1)
+  }
+}
+
+# Guardamos los resultados en una nueva columna.
+booking$is_apartment <- is_apartment_vector
+
+# Buscamos si tiene cancelación gratuita
+free_cancelation_vector <- c()
+for (i in seq(1, length(booking$room_data))) {
+  free_cancelation <- gregexpr("(Free cancellation)", booking$room_data[i])[[1]][1]
+  
+  if (free_cancelation==-1) {
+    free_cancelation_vector <- append(free_cancelation_vector, 0)
+  } else {
+    free_cancelation_vector <- append(free_cancelation_vector, 1)
+  }
+}
+
+# Guardamos los resultados en una nueva columna.
+booking$has_free_cancelation <- free_cancelation_vector
+
+
+#booking <- booking %>%
+#    select(-c("room_price", "min_price"))
+
+```
+
+
 #### 2.2. Ceros y elementos vacíos
 
 Dando paso a el tratamiento de ceros y elementos vacios, lo primero que debemos hacer es identificar aquellas variables en las que encontramos valores faltantes. Como observamos, "postal_code" (19), "longitude" (16), "hotel_score" (8) y el resto de variables relacionadas con los scores (60) presentan valores faltantes.
