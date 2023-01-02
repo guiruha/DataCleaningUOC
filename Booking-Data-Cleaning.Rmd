@@ -3,9 +3,9 @@ title: 'Práctica 2: Booking Data Cleaning'
 author: "Gerard Alcalde and Guillem Rochina"
 date: "2022-12-24"
 output:
-  html_document: default
-  pdf_document: default
   word_document: default
+  pdf_document: default
+  html_document: default
 ---
 
 ```{r setup, include=FALSE}
@@ -151,7 +151,7 @@ De la columna address tan sólo nos interesa el código postal (el barrio no se 
 Sys.setlocale('LC_ALL', 'C')
 # Extraemos los valores de codigo postal de la columna addres utilizando expressiones regulares
 booking <- booking %>%
-  extract(address, c("postal_code"), regex = "( [0-9]{5} )", remove = FALSE)
+  extract(address, c("postal_code"), regex = "( [0-9]{5} )")
 
 ```
 
@@ -280,6 +280,9 @@ booking$has_free_cancelation <- free_cancelation_vector
 #booking <- booking %>%
 #    select(-c("room_price", "min_price"))
 
+booking <- booking %>%
+  select(-c("room_data"))
+
 ```
 
 
@@ -292,34 +295,59 @@ sapply(booking, function(y) sum(length(which(is.na(y)))))
   
 ```
 
+Por lo que respecta a la variable "postal_code" encontramos que en todos aquellos registros donde se encuentan NAs, también hallamos datos faltantes en la mayoría del resto de columnas. Por tanto, dado que dichos registros no nos aportan información de valor, procedemos a eliminarlos del dataset.
+
 ```{r}
 
-# c(1:4) es por el output de knitr, más adelante lo cambiamos.
-head(booking[is.na(booking$postal_code),c(1:4)], 5)
+# Comprobamos algunos de los registros donde hay datos faltantes de postal_code
+booking[is.na(booking$postal_code),] %>%
+  select(c("city", "month_in", "postal_code", "longitude", "hotel_score", "staff_score", "location_score")) %>%
+  head(10)
 
+# Filtramos los datos para eliminar aquellos registros que tienen NAs en postal_code
 booking <- booking[!is.na(booking$postal_code),]
   
 ```
 
+Si comprobamos de nuevo que columnas presentan todavía datos faltantes, observamos que en algunos casos (como "longitude") hemos logrado eliminar todos los datos faltantes, mientras que en el resto se han reducido en 16 unidades el número de registros con NAs, pues como se había comentado todos aquellos registros con ausencia de postal_code, también carecía del resto de datos.
+
 ```{r}
 sapply(booking, function(y) sum(is.na(y)))
 ```
+
+A continuación, analizamos los datos faltantes de hotel_score. En este caso, encontramos que la ausencia de datos se registra de dos formas distintas, o bien con la introducciónd de NAs o bien con el valor -1. Por tanto, dado que el tratamiento en ambos casos va a ser el mismo, transformamos todos los valores -1 en NAs para poder llevar a cabo el siguiente proceso de inputación.
+
 ```{r}
 
-head(booking[is.na(booking$hotel_score),c(1:4)], 5)
+# Comprobamos algunos de los registros donde hay datos faltantes de hotel_score
+booking[is.na(booking$hotel_score),] %>%
+  select(c("city", "month_in", "hotel_score", "staff_score", "location_score", "longitude", "facilities_score", "cleanliness_score", "comfort_score")) %>%
+  head(5)
 
 ```
 
 ```{r}
 
-tail(booking[booking$hotel_score == "-1",c(1:4)], 5)
+# Comprobamos algunos de los registros donde hay datos faltantes de hotel_score
+booking[booking$hotel_score == "-1",] %>%
+  select(c("city", "month_in", "hotel_score", "staff_score", "location_score", "longitude", "facilities_score", "cleanliness_score", "comfort_score")) %>%
+  tail(5)
 
+booking[booking$hotel_score == "-1",] %>%
+  select(c("city", "month_in", "hotel_score", "staff_score", "free_wifi_score", "free_wifi")) %>%
+  tail(10)
+
+
+# Tranformamos los valores -1 en NAs para poder llevar a cabo el proceso de inputación correctamente.
 booking$hotel_score <- ifelse(booking$hotel_score == "-1", NA, booking$hotel_score)
 
 ```
 
+Dado que en este caso tan sólo encontramos datos faltantes en las columnas de score no consideramos eliminar estos registros, sino llevar a cabo una imputación. Aunque se podría haber utilizado una metología más simple como el uso de la media o la mediana, hemos optado por hacer uso de un método más complejo, basado en la similitud entre registros, en concreto llevar a cabo una imputación mediante el algoritmo de K vecinos más próximos. En este caso, la función se encarga de devolver los mismos valores en caso de que ya existan en el dataset y el valor de los registros más "similares" en el caso de un registro con NAs. No obstante, en el caso de "free_wifi_score" tan sólo introduciremos el valor de 0 en aquellos datos con ausencia de valores, pues tras analizar más en detenimiento los registros, aquellos con datos faltantes de free_wifi_score tienen un valor igual a 0 en la columna free_wifi, lo que nos indica ausencia de este servicio en el hotel.
+
 ```{r}
 
+# Imputamos los datos con K Neirest Neighbours
 booking$hotel_score <- kNN(booking)$hotel_score
 booking$staff_score <- kNN(booking)$staff_score 
 booking$facilities_score <- kNN(booking)$facilities_score
@@ -327,10 +355,12 @@ booking$cleanliness_score <- kNN(booking)$cleanliness_score
 booking$comfort_score <- kNN(booking)$comfort_score
 booking$value_for_money_score <- kNN(booking)$value_for_money_score
 booking$location_score <- kNN(booking)$location_score
-# Do not use the same treatement
+# Imputamos valores de 0 a la columan free_wifi_score
 booking$free_wifi_score <- ifelse(is.na(booking$free_wifi_score), 0, booking$free_wifi_score)
 
 ```
+
+Una última comprobación nos revela que el dataset ya no cuenta con datos faltantes, con independencia del formato que pudieran presenta (strings vacías, valores de -1 en integers, o simplemente NAs).
 
 ```{r}
 sapply(booking, function(y) sum(is.na(y)))
@@ -359,7 +389,7 @@ boxplot.stats(booking$num_rooms)$out
 ```{r}
 
 ggplot(booking, aes(y = latitude))+
-  geom_boxplot(color = "red", fill = "navy")
+  geom_boxplot(color = "navy", fill = "white")
 
 boxplot.stats(booking$latitude)$out
 
@@ -368,7 +398,7 @@ boxplot.stats(booking$latitude)$out
 ```{r}
 
 ggplot(booking, aes(y = longitude))+
-  geom_boxplot(color = "red", fill = "white")
+  geom_boxplot(color = "navy", fill = "white")
 
 boxplot.stats(booking$longitude)$out
 
@@ -387,7 +417,6 @@ boxplot.stats(booking$hotel_score)$out
 ```{r}
 
 booking %>%
-  select(-c("hotel_description", "room_data")) %>%
   filter(hotel_score <= 7.0) %>%
   sample_n(3)
 
@@ -396,7 +425,6 @@ booking %>%
 ```{r}
 
 booking %>%
-  select(-c("hotel_description", "room_data")) %>%
   filter(hotel_score == 10.0) %>%
   sample_n(3)
 
@@ -415,7 +443,6 @@ boxplot.stats(booking$facilities_score)$out
 ```{r}
 
 booking %>%
-  select(-c("hotel_description", "room_data")) %>%
   filter(facilities_score <= 6.5) %>%
   sample_n(3)
 
@@ -434,7 +461,6 @@ boxplot.stats(booking$staff_score)$out
 ```{r}
 
 booking %>%
-  select(-c("hotel_description", "room_data")) %>%
   filter(staff_score <= 6.7) %>%
   sample_n(3)
 
@@ -453,7 +479,6 @@ boxplot.stats(booking$cleanliness_score)$out
 ```{r}
 
 booking %>%
-  select(-c("hotel_description", "room_data")) %>%
   filter(cleanliness_score < 7.0) %>%
   sample_n(3)
 
@@ -472,7 +497,6 @@ boxplot.stats(booking$comfort_score)$out
 ```{r}
 
 booking %>%
-  select(-c("hotel_description", "room_data")) %>%
   filter(comfort_score < 7.0) %>%
   sample_n(3)
 
@@ -491,7 +515,6 @@ boxplot.stats(booking$value_for_money_score)$out
 ```{r}
 
 booking %>%
-  select(-c("hotel_description", "room_data")) %>%
   filter(value_for_money_score <= 7.0) %>%
   sample_n(3)
 
@@ -510,7 +533,6 @@ boxplot.stats(booking$location_score)$out
 ```{r}
 
 booking %>%
-  select(-c("hotel_description", "room_data")) %>%
   filter(location_score < 7.0) %>%
   sample_n(3)
 
@@ -529,7 +551,6 @@ boxplot.stats(booking$free_wifi_score)$out
 ```{r}
 
 booking %>%
-  select(-c("hotel_description", "room_data")) %>%
   filter(free_wifi_score < 5.0 & free_wifi_score > 0) %>%
   sample_n(3)
 
@@ -591,7 +612,15 @@ booking <- booking %>%
 ```
 
 
-## ANÁLISIS DE LOS DATOS
+## 4. ANÁLISIS DE LOS DATOS
+
+#### 4.1 Selección de los grupos de datos que se quieren analizar
+
+#### 4.2 Comprobación de la normalidad y homogeneidad de la varianza
+
+#### 4.3 Aplicación de pruebas estadísticas para comparar los grupos de datos
+
+#### 4.4 Aplicación de funciones lineales para resolución del problema
 
 Añadir:
 
@@ -599,8 +628,12 @@ Añadir:
 
 * Comprobar si un feature influye en que se tenga una media de hotel_score mayor o menor. Esto se puede hacer con un t-test, pero hay que comprobar antes la condición de normalidad.
 
-* Para comprobar normalidad hacer uso de qqplots y el test kolmogorov-smirvo o el lilliefors.
+* Para comprobar normalidad hacer uso de qqplots y el test kolmogorov-smirnov o el lilliefors.
 
 * Finalizar con una regresión logística generalizada para determinar que variables influyen en la página donde aparece el hotel y un regresión lineal múltiple. Para la regresión logística podemos hacer uso de curvas ROC y para la regresión lineal múltiple podemos hacer un backward selection en base al p-value.
 
-## RESOLUCIÓN DEL PROBLEMA
+## 5. REPRESENTACIÓN DE LOS RESULTADOS
+
+A lo largo del documento se han presentado representaciones gráficas de los análisis realizados y de los resultados obtenidos.
+
+## 6. RESOLUCIÓN DEL PROBLEMA
