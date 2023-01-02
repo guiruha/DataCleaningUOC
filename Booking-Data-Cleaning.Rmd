@@ -18,6 +18,7 @@ suppressWarnings(library(lubridate))
 suppressWarnings(library(stringr))
 suppressWarnings(library(knitr))
 suppressWarnings(library(VIM))
+suppressWarnings(library(corrplot))
 ```
 
 ## 1. DESCRIPCIÓN DEL DATASET
@@ -553,6 +554,29 @@ booking %>%
 
 ```
 
+```{r}
+
+ggplot(booking, aes(y = length_description, color = city))+
+  geom_boxplot() +
+  facet_grid(~city)
+
+boxplot.stats(booking$length_description)$out
+
+```
+
+
+```{r}
+
+ggplot(booking, aes(y = min_price, color = city))+
+  geom_boxplot() +
+  facet_grid(~city)
+
+boxplot.stats(booking$min_price)$out
+
+```
+
+
+
 #### 2.4. Exportación de los datos postprocesados
 
 ```{r}
@@ -611,11 +635,63 @@ booking <- booking %>%
 
 ## 4. ANÁLISIS DE LOS DATOS
 
+En este apartado se procede a analizar los datos que previamente hemos preprocesado. El objetivo de este trabajo era obtener que factores influenciaban en el posicionamiento de un hotel en el buscador de Booking, para ello se recogieron distintas variables mediante webscrapping, las cuales se han almacenado y preprocesado en el dataframe **booking**.
+
+A continuación se evaluará la influencia de las distintas variables sobre la posición de un hotel en el buscador, para ello se emplea una matriz de correlación. Una vez obtenidas las variables con mayor correlación con la variable objetivo generaremos una selección de los grupos de datos a analizar, separando los datos según los valores de estas variables correlacionadas con la variable objetivo.
+
+Una vez generados los distintos grupos procederemos a evaluar la normalidad y la homogeneidad de la varianza para así poder determinar en el siguiente punto que pruebas estadísticas se pueden aplicar.
+
+Finalmente aplicaremos distintas pruebas estadísticas adicionales a la correlación hayada inicialmente. Estas pruebas estadísticas incluirán contrastes de hipótesis y regresiones lineales.
+
+#### 4.1 Correlación con la variable objetivo
+
+Comenzamos evaluando la correlación entre las distintas variables con nuestra variable objetivo, para ello creamos una matriz de correlación y evaluamos los resultados obtenidos.
+
+```{r}
+
+# Seleccionamos solo las variables numéricas
+booking_numeric <- booking %>%
+  select(-c("city", "month_in", "check_in", "month_out", "check_out", "postal_code", "latitude", "longitude"))
+
+sapply(booking_numeric, function(y) sum(is.na(y)))
+
+# Creamos una matriz de correlación del dataset
+cor_mat <- cor(booking_numeric)
+corrplot(cor_mat, method="color")
+```
+
+Observamos que variables como las distintas puntuaciones estan correlacionadas entre ellas, por lo que un hotel que haya obtenido una puntuación elevada en un aspecto generalmente también lo obtendrá en el resto. También encontramos que los hoteles con distintas atributos como aire acondicionado o baño privado suelen tener el resto de atributos.
+
+```{r}
+
+# Filtramos para obtener cuales son las variables más correlacionadas con nuestra variable objetivo, page_count
+cor_mat_df <- as.data.frame(cor_mat)
+cor_mat_df %>%
+  arrange(page_count) %>%
+  select(page_count)
+```
+
+No obstante cuando evaluamos la posición en la página web observamos que no hay una correlación elevada con ninguna variable, encontrando correlaciones por debajo de 0.12 en todos los casos lo cual es sorprendente. No obstante, se obta por evaluar la influencia de determinadas variables que han estado más correlacionadas con la variable objetivo y que son de tipo binario como es el caso de:
+
+* **is_apartment**
+* **kitchen**
+* **air_conditioning**
+* **elevator**
+* **private_bathroom**
+* **has_free_cancelation**
+
+
 #### 4.1 Selección de los grupos de datos que se quieren analizar
 
 #### 4.2 Comprobación de la normalidad y homogeneidad de la varianza
 
 #### 4.3 Aplicación de pruebas estadísticas para comparar los grupos de datos
+
+
+
+
+
+
 
 #### 4.4 Aplicación de funciones lineales para resolución del problema
 
