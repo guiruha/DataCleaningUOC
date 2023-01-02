@@ -276,10 +276,7 @@ for (i in seq(1, length(booking$room_data))) {
 # Guardamos los resultados en una nueva columna.
 booking$has_free_cancelation <- free_cancelation_vector
 
-
-#booking <- booking %>%
-#    select(-c("room_price", "min_price"))
-
+# Eliminamos la columna correspondiente a room_data
 booking <- booking %>%
   select(-c("room_data"))
 
@@ -315,7 +312,7 @@ Si comprobamos de nuevo que columnas presentan todavía datos faltantes, observa
 sapply(booking, function(y) sum(is.na(y)))
 ```
 
-A continuación, analizamos los datos faltantes de hotel_score. En este caso, encontramos que la ausencia de datos se registra de dos formas distintas, o bien con la introducciónd de NAs o bien con el valor -1. Por tanto, dado que el tratamiento en ambos casos va a ser el mismo, transformamos todos los valores -1 en NAs para poder llevar a cabo el siguiente proceso de inputación.
+A continuación, analizamos los datos faltantes de hotel_score. En este caso, encontramos que la ausencia de datos se registra de dos formas distintas, o bien con la introducción de NAs o bien con el valor -1. Por tanto, dado que el tratamiento en ambos casos va a ser el mismo, transformamos todos los valores -1 en NAs para poder llevar a cabo el siguiente proceso de inputación.
 
 ```{r}
 
@@ -374,7 +371,7 @@ sapply(booking, function(y) sum(y == ""))
 
 #### 2.3. Valores extremos
 
-Los outliers son aquellos datos extremos que dada su distancia con respecto al grueso de la distribución a priori resultan no ser congruentes si los comparamos con la población/muestra analizada. Existen varias vías para detectarlos, no obstante el método más rápdio y común se basa en el uso de boxplots, donde se detectan aquellos valores que se sitúan 1.5 veces más allá del rango intercuartílico con respecto a la mediana. Asimismo, en este trabajo también haremos uso de la función "boxplots.stats()" a fin de detectar, con un output más allá del visual, los outliers que encontramos usando boxplots. Dado que muchas de las variables que hemos generado en la fase de limpieza son dicotómicas, tan solo nos encargaremos de comprobar si existen valores extremos en las columnas de **num_rooms**, **latitude**, **longitude**, **hotel_score** y el resto de **scores del hotel**.
+Los outliers son aquellos datos extremos que dada su distancia con respecto al grueso de la distribución a priori resultan no ser congruentes si los comparamos con la población/muestra analizada. Existen varias vías para detectarlos, no obstante el método más rápdio y común se basa en el uso de boxplots, donde se detectan aquellos valores que se sitúan 1.5 veces más allá del rango intercuartílico con respecto a la mediana. Asimismo, en este trabajo también haremos uso de la función "boxplots.stats()" a fin de detectar, con un output más allá del visual, los outliers que encontramos usando boxplots. Dado que muchas de las variables que hemos generado en la fase de limpieza son dicotómicas, tan solo nos encargaremos de comprobar si existen valores extremos en las columnas de **num_rooms**, **latitude**, **longitude**, **hotel_score** y el resto de **scores del hotel**, **length_description** y **min_price**.
 
 ```{r}
 
