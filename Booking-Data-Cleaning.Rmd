@@ -648,16 +648,56 @@ Finalmente aplicaremos distintas pruebas estadísticas adicionales a la correlac
 Comenzamos evaluando la correlación entre las distintas variables con nuestra variable objetivo, para ello creamos una matriz de correlación y evaluamos los resultados obtenidos.
 
 ```{r}
+# Transformamos las variables a numérico
+booking$postal_code <- as.numeric(booking$postal_code)
+booking$latitude <- as.numeric(booking$latitude)
+booking$longitude <- as.numeric(booking$longitude)
+booking$free_wifi <- as.numeric(booking$free_wifi)
+#booking$apartments <- as.numeric(booking$apartments)
+#booking$pet_friendly <- as.numeric(booking$pet_friendly)
 
 # Seleccionamos solo las variables numéricas
 booking_numeric <- booking %>%
-  select(-c("city", "month_in", "check_in", "month_out", "check_out", "postal_code", "latitude", "longitude"))
+  select(-c("city", "month_in", "check_in", "month_out", "check_out", "as.integer(!is.na(NA))"))
 
-sapply(booking_numeric, function(y) sum(is.na(y)))
+mattmp <- booking_numeric %>%
+  select(c("adults", "children", "num_rooms", "postal_code", "latitude", "longitude", "hotel_score", "length_description", 
+           "is_suite", "is_apartment", "has_free_cancelation", "min_price", "current_page", "in_page_count", "page_count"))
+
+sapply(mattmp, function(y) sum(is.na(y)))
 
 # Creamos una matriz de correlación del dataset
-cor_mat <- cor(booking_numeric)
-corrplot(cor_mat, method="color")
+cor_mat <- cor(mattmp, method = "spearman")
+plot.new()
+plot.window(xlim=c(-2,2), ylim=c(5,10))
+corrplot(cor_mat, method="color", type = "lower", tl.col = "black", tl.srt = 45, diag = FALSE, tl.cex = 0.55, addCoef.col = 'black', number.cex = 0.5)
+```
+```{r}
+mattmp <- booking_numeric %>%
+  select(c("hotel_score", "staff_score", "facilities_score", "cleanliness_score", "comfort_score", "value_for_money_score", "location_score",
+           "free_wifi_score", "min_price", "current_page", "in_page_count", "page_count"))
+
+sapply(mattmp, function(y) sum(is.na(y)))
+
+# Creamos una matriz de correlación del dataset
+cor_mat <- cor(mattmp, method = "spearman")
+plot.new()
+plot.window(xlim=c(-2,2), ylim=c(5,10))
+corrplot(cor_mat, method="color", type = "lower", tl.col = "black", tl.srt = 45, diag = FALSE, tl.cex = 0.55, addCoef.col = 'black', number.cex = 0.5)
+```
+
+```{r}
+mattmp <- booking_numeric %>%
+  select(c("balcony", "swimming_pool", "pet_friendly", "kitchen", "city_view", "aparments", "non_smoking_rooms", "hotel_score", 
+           "private_bathroom", "elevator", "heating", "safe", "air_conditioning", "free_wifi", "min_price", "current_page", "in_page_count", "page_count"))
+
+sapply(mattmp, function(y) sum(is.na(y)))
+
+# Creamos una matriz de correlación del dataset
+cor_mat <- cor(mattmp, method = "spearman")
+plot.new()
+plot.window(xlim=c(-2,2), ylim=c(5,10))
+corrplot(cor_mat, method="color", type = "lower", tl.col = "black", tl.srt = 45, diag = FALSE, tl.cex = 0.55, addCoef.col = 'black', number.cex = 0.5)
 ```
 
 Observamos que variables como las distintas puntuaciones estan correlacionadas entre ellas, por lo que un hotel que haya obtenido una puntuación elevada en un aspecto generalmente también lo obtendrá en el resto. También encontramos que los hoteles con distintas atributos como aire acondicionado o baño privado suelen tener el resto de atributos.
@@ -665,10 +705,11 @@ Observamos que variables como las distintas puntuaciones estan correlacionadas e
 ```{r}
 
 # Filtramos para obtener cuales son las variables más correlacionadas con nuestra variable objetivo, page_count
+cor_mat <- cor(booking_numeric, method = "spearman")
 cor_mat_df <- as.data.frame(cor_mat)
 cor_mat_df %>%
-  arrange(page_count) %>%
-  select(page_count)
+  arrange(current_page) %>%
+  select(current_page)
 ```
 
 No obstante cuando evaluamos la posición en la página web observamos que no hay una correlación elevada con ninguna variable, encontrando correlaciones por debajo de 0.12 en todos los casos lo cual es sorprendente. No obstante, se obta por evaluar la influencia de determinadas variables que han estado más correlacionadas con la variable objetivo y que son de tipo binario como es el caso de:
@@ -680,16 +721,46 @@ No obstante cuando evaluamos la posición en la página web observamos que no ha
 * **private_bathroom**
 * **has_free_cancelation**
 
+# ¿PROBAMOS A HACER UNA REGRESIÓN LINEAL PARA PRECIO? ADEMÁS DE LA REGRESIÓN LOGISTICA PARA LA PÁGINA EN LA QUE SE ENCUENTRA EL HOTEL
+```{r}
+
+# Filtramos para obtener cuales son las variables más correlacionadas con nuestra variable objetivo, page_count
+cor_mat <- cor(booking_numeric, method = "spearman")
+cor_mat_df <- as.data.frame(cor_mat)
+cor_mat_df %>%
+  arrange(min_price) %>%
+  select(min_price)
+```
 
 #### 4.1 Selección de los grupos de datos que se quieren analizar
 
+#***************************************************************************************#
+# FREE WIFI, APARTMENTS Y PET_FRIENDLY SOLO TIENE UN VALOR 0 (ES POR ERROR DEL CÓDIGO?) #
+#                        EN MIN_PRICE HAY MUCHOS CEROS                                  #
+#***************************************************************************************#
+
 #### 4.2 Comprobación de la normalidad y homogeneidad de la varianza
 
+```{r}
+norm_cols <- c("hotel_score", "length_description", "hotel_score", "staff_score", "facilities_score", "cleanliness_score", "comfort_score", "value_for_money_score", "location_score", "free_wifi_score", "min_price")
+
+booking_norm <- booking_numeric %>%
+  select(norm_cols)
+
+par(mfrow=c(2,2))
+for(i in 1:ncol(booking_norm)){
+  qqnorm(booking_norm[,i], main = paste("QQ-Plot de ",colnames(booking_norm)[i]), col = "navy")
+  qqline(booking_norm[,i], col = "red")
+  hist(booking_norm[,i], main = paste("Histograma de ", colnames(booking_norm)[i]), xlab=colnames(booking_norm)[i], freq = FALSE)
+}
+```
+
+```{r}
+
+lapply(booking_norm, shapiro.test)
+
+```
 #### 4.3 Aplicación de pruebas estadísticas para comparar los grupos de datos
-
-
-
-
 
 
 
