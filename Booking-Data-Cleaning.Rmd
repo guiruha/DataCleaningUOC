@@ -20,6 +20,9 @@ suppressWarnings(library(knitr))
 suppressWarnings(library(VIM))
 suppressWarnings(library(corrplot))
 suppressWarnings(library(MASS))
+suppressWarnings(library(devtools))
+install_github("ProcessMiner/nlcor")
+suppressWarnings(library(nlcor))
 ```
 
 ## 1. DESCRIPCIÓN DEL DATASET
@@ -301,7 +304,7 @@ booking <- booking %>%
 
 #### 2.2. Ceros y elementos vacíos
 
-Dando paso a el tratamiento de ceros y elementos vacios, lo primero que debemos hacer es identificar aquellas variables en las que encontramos valores faltantes. Como observamos, "postal_code" (19), "longitude" (16), "hotel_score" (8), min y mean_price y el resto de variables relacionadas con los scores (60) presentan valores faltantes.
+Dando paso a el tratamiento de ceros y elementos vacios, lo primero que debemos hacer es identificar aquellas variables en las que encontramos valores faltantes. Como observamos, "postal_code" (19), "longitude" (16), "hotel_score" (8), min y mean_price y el resto de variables relacionadas con los scores (60) presentan valores faltantes, destacando free_wifi_score con 423 registros faltantes, consecuencia con toda seguridad de la ausencia de este servicio en dichos hoteles.
 
 ```{r}
 sapply(booking, function(y) sum(length(which(is.na(y)))))
@@ -615,7 +618,7 @@ boxplot.stats(booking$min_price)$out
 
 ```{r}
 
-#write.csv(booking, "hotel_data_processed.csv")
+write.csv(booking, "hotel_data_processed.csv")
 
 ```
 
@@ -654,9 +657,9 @@ proc_flights <- flights %>%
                city_airp = ifelse(rep_airp == "ES_LEBL", "Barcelona", ifelse(rep_airp == "ES_LEVC", "Valencia", "Madrid"))) %>%
         # Agrupamos por ciudad y mes y calculamos la media de vuelos.
         group_by(rep_airp, month_name) %>%
-        mutate(mean_fligths = mean(OBS_VALUE)) %>%
+        mutate(mean_flights = mean(OBS_VALUE)) %>%
         ungroup() %>%
-        dplyr::select(c(city_airp, month_name, mean_fligths))
+        dplyr::select(c(city_airp, month_name, mean_flights))
 
 # Nos quedamos con los registros únicos
 final_flights <- unique(proc_flights)
@@ -677,7 +680,7 @@ Una vez generados los distintos grupos procederemos a evaluar la normalidad y la
 
 Finalmente aplicaremos distintas pruebas estadísticas adicionales a la correlación hayada inicialmente. Estas pruebas estadísticas incluirán contrastes de hipótesis y regresiones lineales.
 
-#### 4.1 Correlación con la variable objetivo
+#### 4.1 Correlación con la variable objetivo y selección de los grupos de datos que se quieren analizar
 
 Comenzamos evaluando la correlación entre las distintas variables con nuestra variable objetivo, para ello creamos una matriz de correlación y evaluamos los resultados obtenidos.
 
@@ -709,7 +712,7 @@ corrplot(cor_mat, method="color", type = "lower", tl.col = "black", tl.srt = 45,
 ```{r}
 mattmp <- booking_numeric %>%
   dplyr::select(c("hotel_score", "staff_score", "facilities_score", "cleanliness_score", "comfort_score", "value_for_money_score", "location_score",
-           "free_wifi_score", "min_price", "current_page", "in_page_count", "page_count"))
+           "mean_flights", "free_wifi_score", "min_price", "mean_price", "current_page", "in_page_count", "page_count"))
 
 sapply(mattmp, function(y) sum(is.na(y)))
 
@@ -723,7 +726,7 @@ corrplot(cor_mat, method="color", type = "lower", tl.col = "black", tl.srt = 45,
 ```{r}
 mattmp <- booking_numeric %>%
   dplyr::select(c("balcony", "swimming_pool", "pet_friendly", "kitchen", "city_view", "aparments", "non_smoking_rooms", "hotel_score", 
-           "private_bathroom", "elevator", "heating", "safe", "air_conditioning", "free_wifi", "min_price", "current_page", "in_page_count", "page_count"))
+           "private_bathroom", "elevator", "heating", "safe", "air_conditioning", "free_wifi", "mean_price", "min_price", "current_page", "in_page_count", "page_count"))
 
 sapply(mattmp, function(y) sum(is.na(y)))
 
@@ -734,60 +737,100 @@ plot.window(xlim=c(-2,2), ylim=c(5,10))
 corrplot(cor_mat, method="color", type = "lower", tl.col = "black", tl.srt = 45, diag = FALSE, tl.cex = 0.55, addCoef.col = 'black', number.cex = 0.5)
 ```
 
-Observamos que variables como las distintas puntuaciones estan correlacionadas entre ellas, por lo que un hotel que haya obtenido una puntuación elevada en un aspecto generalmente también lo obtendrá en el resto. También encontramos que los hoteles con distintas atributos como aire acondicionado o baño privado suelen tener el resto de atributos.
+Como bien se puede observar en las matrices, las varialbes que recogen las distintas puntuaciones estan correlacionadas entre ellas, por lo que un hotel que haya obtenido una puntuación elevada en un aspecto generalmente también lo obtendrá en el resto. Este factor es de especial interés si se seleccionan varias columnas de este tipo, pues corremos el riesgo de sufrir un problema de multicolinealidad. También encontramos que los hoteles con distintas atributos como aire acondicionado o baño privado suelen tener el resto de servicios adicionales, aunque este factor puede deberse a que es más habitual encontrar este tipo de elementos en una habitación de hotel, por lo que es común que cuando exista una habitación con calefacción, por ejemplo, también tenga aire acondicionado o baños privado. Por último, aunque es evidente, cabe destacar que las mayores colinealidades las tenemos con variables directamente relacionadas o que presentan información de la misma fuente (current_page con page_count o mean_price con min_price). No obstante, esto no es un problema, pues eliminaremos estas variables del conjunto de entrenamiento para no incurrir en "data leakage".
 
 ```{r}
-
-# Filtramos para obtener cuales son las variables más correlacionadas con nuestra variable objetivo, page_count
+# Filtramos para obtener cuales son las variables más correlacionadas con nuestra variable objetivo, current_page
 cor_mat <- cor(booking_numeric, method = "spearman")
 cor_mat_df <- as.data.frame(cor_mat)
 cor_mat_df %>%
-  arrange(current_page) %>%
-  dplyr::select(current_page)
+  filter(abs(page_count) > 0.065) %>%
+  filter(page_count < 0.95) %>%
+  arrange(page_count) %>%
+  dplyr::select(page_count)
 ```
 
-No obstante cuando evaluamos la posición en la página web observamos que no hay una correlación elevada con ninguna variable, encontrando correlaciones por debajo de 0.12 en todos los casos lo cual es sorprendente. No obstante, se obta por evaluar la influencia de determinadas variables que han estado más correlacionadas con la variable objetivo y que son de tipo binario como es el caso de:
+No obstante cuando evaluamos la posición en la página web observamos que no hay una correlación elevada con ninguna variable, encontrando valores por debajo de 0.12 (en valor absoluto) para todos los casos. No obstante, para el caso de page_count, hemos optado por someter a estudio aquellas variables que presentan mayor correlación de spearman con la variable dependiente (pues evaluando con distintas métricas que buscan determinar el nivel de dependencia no-lineal hemos obtenido resultados similares). Las variables seleccionadas en cuestión son:
 
-* **is_apartment**
 * **kitchen**
+* **is_apartment**
+* **adults**
 * **air_conditioning**
 * **elevator**
 * **private_bathroom**
+* **num_rooms**
+* **value_for_money_score**
+* **heating**
+* **non_smoking_rooms**
+* **comfort_score**
+* **hotel_score**
+* **longitude**
 * **has_free_cancelation**
 
-# ¿PROBAMOS A HACER UNA REGRESIÓN LINEAL PARA PRECIO? ADEMÁS DE LA REGRESIÓN LOGISTICA PARA LA PÁGINA EN LA QUE SE ENCUENTRA EL HOTEL
+Mientras que la variable dependiente será **page_count**
+
+```{r}
+X_pcount <- booking_numeric %>%
+  dplyr::select(c("kitchen", "is_apartment", "adults", "air_conditioning", "elevator", "private_bathroom",
+           "num_rooms", "value_for_money_score", "heating", "non_smoking_rooms", "comfort_score", "hotel_score",
+           "longitude", "has_free_cancelation"))
+y_pcount <- booking_numeric %>%
+  dplyr::select("page_count")
+```
+
+En el caso del problema a resolver relacionado con el precio, al analizar las correlaciones sí que encontramos valores entre 0.15 y 0.20. Aunque estas correlaciones no sean muy elevadas nos ofrecen un escenario más prometedor que el anteriormente presentado. A continuación, procedemos a seguir con el mismo procedimiento que con page_count, esta vez seleccionando las siguientes variables:
+
+* **postal_code**
+* **elevator**
+* **heating**
+* **cleanliness_score**
+* **latitude**
+* **mean_flights**
+* **location_score**
+* **hotel_score**
+* **facilities_score**
+* **non_smoking_rooms**
+* **comfort_score**
+* **is_apartment**
+* **private_bathroom**
+* **kitchen**
+* **air_conditioning**
+
 ```{r}
 
 # Filtramos para obtener cuales son las variables más correlacionadas con nuestra variable objetivo, page_count
 cor_mat <- cor(booking_numeric, method = "spearman")
 cor_mat_df <- as.data.frame(cor_mat)
 cor_mat_df %>%
+  filter(abs(mean_price) > 0.1) %>%
+  filter(mean_price < 0.95) %>%
   arrange(mean_price) %>%
   dplyr::select(mean_price, min_price)
+
+X_price <- booking_numeric %>%
+  dplyr::select(c("postal_code", "elevator", "heating", "cleanliness_score", "latitude", "mean_flights",
+           "location_score", "hotel_score", "facilities_score", "non_smoking_rooms", "comfort_score", "is_apartment",
+           "private_bathroom", "kitchen", "air_conditioning"))
+y_price <- booking_numeric %>%
+  dplyr::select("mean_price")
 ```
-
-#### 4.1 Selección de los grupos de datos que se quieren analizar
-
-#***************************************************************************************#
-# FREE WIFI, APARTMENTS Y PET_FRIENDLY SOLO TIENE UN VALOR 0 (ES POR ERROR DEL CÓDIGO?) #
-#                        EN MIN_PRICE HAY MUCHOS CEROS                                  #
-#***************************************************************************************#
 
 #### 4.2 Comprobación de la normalidad y homogeneidad de la varianza
 
 Para comprobar si los valores de las variables de nuestro dataset se distribuyen o se aproximan a un población distribuida normalmente haremos un análisis visual, con QQ-Plots y Histogramas, y un análisis mediante el test Shapiro-Wilk.
 
 ```{r}
-norm_cols <- c("hotel_score", "length_description", "hotel_score", "staff_score", "facilities_score", "cleanliness_score", "comfort_score", "value_for_money_score", "location_score", "free_wifi_score", "min_price", "mean_price")
+
+norm_cols <- c("value_for_money_score", "comfort_score", "hotel_score", "cleanliness_score", "location_score", "facilities_score")
 
 booking_norm <- booking_numeric %>%
   dplyr::select(norm_cols)
 
 par(mfrow=c(2,2))
 for(i in 1:ncol(booking_norm)){
-  qqnorm(booking_norm[,i], main = paste("QQ-Plot de ",colnames(booking_norm)[i]), col = "navy")
+  qqnorm(booking_norm[,i], main = paste("QQ-Plot de",colnames(booking_norm)[i]), col = "navy")
   qqline(booking_norm[,i], col = "red")
-  hist(booking_norm[,i], main = paste("Histograma de ", colnames(booking_norm)[i]), xlab=colnames(booking_norm)[i], freq = FALSE)
+  hist(booking_norm[,i], main = paste("Histograma de", colnames(booking_norm)[i]), xlab=colnames(booking_norm)[i], freq = FALSE)
 }
 ```
 
@@ -802,19 +845,16 @@ lapply(booking_norm, shapiro.test)
 A fin de aproximar más los datos a una distribución normal, se propone hacer una transformación de box-cox y comprobar si los datos efectivamente se aproximan más a una normal. Tras llevar a cabo este proceso, si bien los histogramas muestran en algunos casos una distribución "visualmente más normales" y los QQ-plots parecen mostrar que la transformación ha aliviado ligeramente el problema con las colas, los resultados de la transformación no han sido suficientes como para poder considerar que los datos se distribuyen como una normal. No obstante, no debemos preocuparnos demasiado por este problema, pues tenemos suficientes registros como para poder apoyarnos en el Teorema del Límite Central. Por ejemplo, el t-test asume que las medias de las diferentes muestras se distribuyen normalmente (siendo una muestra de más de 30 registros suficiente, como rule of thumb, para que el t-test sea válido aunque los datos no se distribuyan normalmente).
 
 ```{r}
-norm_cols <- c("hotel_score", "length_description", "staff_score", "facilities_score", "cleanliness_score", "comfort_score", "value_for_money_score", "location_score", "free_wifi_score", "min_price", "mean_price")
-
-booking_norm$min_price <- ifelse(booking_norm$min_price == 0, 1, booking_norm$min_price)
-booking_norm$free_wifi_score <- ifelse(booking_norm$free_wifi_score == 0, 1, booking_norm$free_wifi_score)
 
 par(mfrow=c(2,3))
 for(i in 1:ncol(booking_norm)){
   b <- boxcox(lm(booking_norm[,i] ~ 1))
   lambda <- b$x[which.max(b$y)]
-  qqnorm((booking_norm[,i]^lambda - 1)/lambda, main = paste("QQ-Plot de ",colnames(booking_norm)[i]), col = "navy")
+  qqnorm((booking_norm[,i]^lambda - 1)/lambda, main = paste("QQ-Plot de",colnames(booking_norm)[i]), col = "navy")
   qqline((booking_norm[,i]^lambda - 1)/lambda, col = "red")
-  hist((booking_norm[,i]^lambda - 1)/lambda, main = paste("Histograma de ", colnames(booking_norm)[i]), xlab=colnames(booking_norm)[i], freq = FALSE)
+  hist((booking_norm[,i]^lambda - 1)/lambda, main = paste("Histograma de", colnames(booking_norm)[i]), xlab=colnames(booking_norm)[i], freq = FALSE)
 }
+
 ```
 
 Seguidamente, analizaremos la homocedasticidad mediante boxplots y varios test de homocedasticidad, o de homogeneidad de varianzas. En este caso, no podemos utilizar el test de Levene ni el de Barlett ya que son muy sensibles ante datos no normales y, como acabamos de presentar, los datos analizados no se aproximan en ningún caso a una normal.
