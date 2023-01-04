@@ -51,20 +51,15 @@ A continuación, se realiza una breve descripción de cada una de las variables 
 #### 1.2. Importancia y problema a responder
 
 Aparecer en los primeros resultados de una búsqueda de un usuario por internet se ha convertido en los últimos años en una de las preocupaciones principales de cualquier negocio que busca hacerse un hueco en el mundo digital. Este fenómeno explica la proliferación de herramientas como el SEO y el SEM, mediante las cuales se intenta innovar (más allá del pago de tarifas para aparecer en las primeras páginas de búsqueda) a fin de lograr un mejor “posicionamiento” en buscadores como Google o Bing. El negocio hotelero no es una excepción en este caso.
-
 No obstante, el uso de dichas herramientas no resulta útil si nos enfrentamos a un buscador dentro de una página web, como el caso que nos ocupa con Booking.com. ¿Qué hacer entonces? ¿Cómo mejorar el posicionamiento dentro de la web?
+Asimismo, la fijación de precios o “pricing” puede ser una tardea ardua en los últimos años, pues la aparición de apartamentos vacacionales a través de plataformas como AirBnB ha incrementado de manera significativa la competencia a la que se deben enfrentar los propietarios de los hoteles, lo que influye en última instancia los precios a establecer por sus servicios. Dicho esto, ¿Qué precios se deben fijar dadas las características de un hotel? ¿Añadir un servicio adicional permitiría a un hotel elevar los precios de sus habitaciones?.
+Ante las preguntas presentadas en los párrafos anteriores, el objetivo de este proyecto es dual. Por un lado se busca obtener las características que hacen que un hotel esté mejor posicionado que otro en el metabuscador de Booking.com y, por el otro, se persigue desarrollar un modelo que indique qué precios se deberían establecer dadas las características de una habitación y qué elementos pueden incrementar el precio de forma relevante.
+En conclusión, el presente proyecto pretende dar continuidad a la Práctica 1, explotando los datos que se obtuvieron mediante web scrapping para ayudar a superar dos de los desafíos más relevantes para el sector hotelero.
 
-En la web del metabuscador de alojamientos encontramos que define a dichas posiciones entre los resultados como “ranking”, descrito por ellos mismos como el orden en el que se muestran los alojamientos disponibles en los resultados de búsqueda. En su blog “Booking.com Partner Hub” indican que los resultados son ordenados según la relevancia en base a las preferencias particulares de cada “cliente”, incluyendo en este caso también las “dinámicas del mercado”, el “rendimiento del alojamiento”, etc. Variable que poca información revela al interesado en que sus hoteles/alojamientos aparezcan en posiciones más “atractivas” para este.
-
-El objetivo de este dataset es obtener las características que hacen que un hotel esté mejor posicionado que otro. El posicionamiento de los hoteles suele ser algo estático y por ello con una sola lectura de la página web puede ser suficiente.
-
-En concreto, en el mismo post analizado se destaca la relevancia de revisar regularmente las “condiciones flexibles”, los comentarios, los precios externos, las promociones, la puntuación de la página del alojamiento… a fin de lograr escalar puestos en la clasificación.
-
-Dado el impacto que puede tener en el negocio de un hotel el aparecer en posiciones más inmediatas del buscador, el presente proyecto pretende ser la continuación de la práctica 1, ofreciendo un análisis inferencial que destaque que factores tienen un mayor peso en el posicionamiento de un alojamiento en Booking.com.
 
 ## 2. LIMPIEZA DE LOS DATOS
 
-A fin de iniciar el proceso de limpieza de datos, en primer lugar se debe realizar la lectura del fichero csv que obtuvimos en la práctica anterior. Como resultado de la función de R-base "read.csv" obtenemos un objeto data.frame, que manipularemos en la presente sección.
+A fin de iniciar el proceso de limpieza de datos, en primer lugar, se debe realizar la lectura del fichero csv que obtuvimos en la práctica anterior. Como resultado de la función de R-base “read.csv” obtenemos un objeto data.frame, que manipularemos en la presente sección.
 
 ```{r}
 # Lectura y breve descripción de los datos
@@ -73,7 +68,7 @@ booking <- read.csv("hotels_data.csv", header = TRUE)
 summary(booking)
 ```
 
-Como observamos tanto con la función "summary" como con la función "class" nos muestran que a cada variable se le ha asignado o bien la clase de entero o la de string. En concreto, muchas de las variables interpretadas como string se tratan de diccionarios y listas, factor que deberemos tener en cuenta a la hora de trabajar con estas variables.
+Tanto con la función “summary” como con la función “class” nos muestran que a cada variable se le ha asignado o bien la clase de entero o la de string. En concreto, muchas de las variables interpretadas como string se tratan de diccionarios y listas, factor que deberemos tener en cuenta a la hora de trabajar con la limpieza de estas variables.
 
 ```{r}
 # Tipo de dato asignado a cada variable
@@ -84,9 +79,9 @@ kable(data.frame(var=names(res), clase=as.vector(res)))
 
 #### 2.1. Transformación de las variables en el formato adecuado
 
-Como se ha comentado, existen algunas variables que presentan todavía una estructura no válida para tratarlos estadísticamente o introducirlos en un modelo de data mining o machine learning. En esta sección nos encargamos de tratar dichas columnas a fin de obtener nuevas variables con un formato adecuado, eliminando a su vez cualquier informaión que no nos sea de utilidad.
+Como se ha comentado, existen algunas variables que presentan todavía una estructura no válida para tratarlos estadísticamente o introducirlos en un modelo de data mining. En esta sección nos encargamos de tratar dichas columnas a fin de obtener nuevas variables con un formato adecuado, eliminando a su vez cualquier información que no nos sea de utilidad.
 
-En primer lugar, cabe destacar que no todas las columnas que tenemos disponibles en el dataset nos ofrecen información relevante para nuestro problema. Por tanto, a fin de reducir la dimensionalidad de este, nos encargamos de eliminar las columnas con información redundante.
+En primer lugar, cabe destacar que no todas las columnas que tenemos disponibles en el dataset nos ofrecen información relevante para nuestro problema. Por tanto, a fin de reducir la dimensionalidad de este, nos encargamos de eliminar las columnas con información redundante (name y search_date).
 
 ```{r}
 # Seleccionamos con la función "select" de dplyr todas las columnas excepto name y search_date, que nos van a ser de poca utilidad.
@@ -95,7 +90,7 @@ booking <- booking %>%
   dplyr::select(-c("name", "search_date"))
 ```
 
-La columna hotel_coordinates incluye tanto los valores de latitud como los de longitud, separados por una coma. Dado que ambos dos valores nos indica información distinta, pues la latitud nos proporcionar información de la posición en dirección norte o sur del ecuador y la longitud información de la posición en dirección este u oeste, en este caso hemos optado por separarlos en dos columnas distintas.
+La columna hotel_coordinates incluye tanto los valores de latitud como los de longitud, separados por una coma. Dado que ambos dos valores nos indican información distinta, pues la latitud nos proporcionar información de la posición en dirección norte o sur del ecuador y la longitud información de la posición en dirección este u oeste, en este caso hemos optado por separarlos en dos columnas distintas.
 
 ```{r}
 # Separamos los valores de la variable hotel coordinates en dos nuevas columnas, latitud y longitud
@@ -125,28 +120,16 @@ booking <- booking %>%
 booking[columns] <- apply(booking[columns], 2, readr::parse_number)
 ```
 
-Dado que de las fechas tan sólo nos interesa el mes en el que se realiza la reserva (un alojamiento con unas características determinadas pdría estar mejor posicionado en un determinado mes que en otro) procedemos a extraer dicha información de las variables "check-in" y "check-out". No obstante, por el momento no eliminamos dichas columnas y las transformamos a formato date por si a caso podemos hacer uso de ellas más adelante.
+Dado que de las fechas tan sólo nos interesa el mes en el que se realiza la reserva (un alojamiento con unas características determinadas podría estar mejor posicionado en un determinado mes que en otro o tener un precio distinto) procedemos a extraer dicha información de las variables check-in y check-out, eliminando estas últimas en el proceso.
 
 ```{r}
 booking <- booking %>%
-  # Separamos el nombre del mes del resto de elementos del registro para check_in y check_out
-  separate(check.in, c(NA, "month_in", NA), sep = "-", remove = FALSE) %>%
-  separate(check.out, c(NA, "month_out", NA), sep = "-", remove = FALSE) %>%
-  # Modificamos la columna check_in para que tenga el formato de fecha normal
-  separate(check.in, c("day", "month", "year"), sep = "-") %>%
-  mutate(month = ifelse(month == "March", "03", ifelse(month == "June", "06", "12"))) %>%
-  unite("check_in", c(day, month, year), sep = "-") %>%
-  # Modificamos la columna check_out para que tenga el formato de fecha normal
-  separate(check.out, c("day", "month", "year"), sep = "-") %>%
-  mutate(month = ifelse(month == "March", "03", ifelse(month == "June", "06", "12"))) %>%
-  unite("check_out", c(day, month, year), sep = "-")
-
-# Transformamos las columnas check_in y check_out al format date
-booking["check_in"] <- as.Date.character(booking$check_in, "%d-%m-%Y")
-booking["check_out"] <- as.Date(booking$check_out, "%d-%m-%Y")
+  # Separamos el nombre del mes del resto de elementos del registro para check_in y check_out. Eliminamos las columnas en el proceso.
+  separate(check.in, c(NA, "month_in", NA), sep = "-") %>%
+  separate(check.out, c(NA, "month_out", NA), sep = "-")
 ```
 
-De la columna address tan sólo nos interesa el código postal (el barrio no se incluye en todos los registros a diferencia del CP, así que hemos optado por quedarnos con estos valores), por lo que extraemos dicha información para crear una nueva columna llamada "postal_code", eliminando la información redundante en el proceso.
+De la columna address tan sólo nos interesa el código postal (el barrio no se incluye en todos los registros a diferencia del CP, así que hemos optado por quedarnos con estos valores), por lo que extraemos dicha información para crear una nueva columna llamada postal_code, eliminando la información redundante en el proceso.
 
 ```{r}
 # Hemos tenido que cambiar esta función para que el extract no diera problemas
@@ -157,7 +140,7 @@ booking <- booking %>%
 
 ```
 
-Los features, entendidos como servicios adicionales más allá de la propia habitación, fueron guardados como una lista. No obstante, de nuevo nos encontramos como R lo ha identificado como string. Es por ello por lo que realizamos un tratamiento similar al de la columna de scores. En este caso creamos tantas variables dummy (columnas dicotómicas con valores de 1, en caso de que el feature exista en dicho registro, o 0, en caso de que no existe) como servicios adicionales de hotel consideramos interesantes.
+Los features, entendidos como servicios adicionales más allá de la propia habitación, fueron guardados como una lista. No obstante, de nuevo nos encontramos como R lo ha identificado como string. Es por ello por lo que realizamos un tratamiento similar al de la columna de scores. En este caso creamos tantas variables dummy (columnas dicotómicas con valores de 1, en caso de que el feature exista en dicho registro, o 0, en caso de que no exista) como servicios adicionales de hotel consideramos interesantes.
 
 ```{r}
 # Definimos las features que consideramos que son interesantes. Utilizamos este formato para filtrar por expresión regular.
@@ -179,9 +162,7 @@ booking <- booking %>%
   dplyr::select(-c("features"))
 ```
 
-Por otro lado, nos encontramos con la columna que incluye la descripción del hotel, esta descripción es muy amplia y un análisis profundo de ella requeriría de técnicas de NLP que no son el objetivo de esta práctica. No obstante, consideramos que la longitud de la descripción del hotel si que puede tener una relación con la posición en el buscador, por lo que transformaremos esta variable a una nueva variable que contenga el número total de palabras que contiene la descripción.
-
-A continuación, se procesa la columna hotel_description para obtener el número de palabras que contiene la descripción que se almacena en la nueva columna length_description y a continuación se elimina esta columna ya que no se empleará en el resto del estudio.
+Por otro lado, nos encontramos con la columna que incluye la descripción del hotel, esta descripción es muy amplia y un análisis profundo de ella requeriría de técnicas de NLP que no son el objetivo de esta práctica. No obstante, consideramos que la longitud de la descripción del hotel sí que puede tener una relación con la posición en el buscador, por lo que transformaremos esta variable a una nueva variable que contenga el número total de palabras que contiene la descripción, eliminando de nuevo dicha columna en el proceso.
 
 ```{r}
 # Evaluamos la longitud de la descripción del hotel
@@ -192,20 +173,18 @@ booking <- booking %>%
     dplyr::select(-c("hotel_description"))
 ```
 
-Finalmente en la columna Room_data, se incluye mucha información referente a los tipos de habitaciones disponibles, precios, características, etc. Esta se había extraído de esta forma con el objetivo de procesarla mediante un diccionario de Python, no obstante al haber optado por un procesado con R este se complicará un poco más. En esta columna tenemos distintos datos que pueden ser muy relevantes que extraeremos, estos son:
-
-* **min_price**: Precio de la habitación más económica.
-* **suite_available**: Una de las habitaciones es de tipo suite.
-* **apartment_available**: Una de la habitaciones es de tipo apartamento.
-* **free_cancelation_available**: Alguna de las habitaciones tiene cancelación gratuita.
-
+Finalmente, en la columna Room_data, se incluye mucha información referente a los tipos de habitaciones disponibles, precios, características, etc. Esta se había extraído de esta forma con el objetivo de procesarla mediante un diccionario de Python. No obstante, al haber optado por un procesado con R este se complicará un poco más. En esta columna tenemos distintos datos que pueden ser muy relevantes, de los cuales extraeremos los siguientes:
+•	min_price: Precio de la habitación más económica.
+•	mean_price: Precio medio de las habitaciones del hotel.
+•	suite_available: Una de las habitaciones es de tipo suite.
+•	apartment_available: Una de las habitaciones es de tipo apartamento.
+•	free_cancelation_available: Alguna de las habitaciones tiene cancelación gratuita.
 
 ```{r}
-
 # Función que encuentra el precio mínimo de la habitación dado un string con la información de las habitaciones
 find_min_price <- function(text) {
   if (text=="{}"){
-    return(0)
+    return(NA)
   }
   a <- gregexpr("([0-9]*', 'room_capacity)", text)
   
@@ -221,7 +200,12 @@ find_min_price <- function(text) {
       min_price <- price
     } 
   }
-  return(min_price)
+  if (min_price == 0){
+    return(NA)
+  }
+  else {
+    return(min_price)
+  }
 }
 
 # Aplicamos la función a todos los valores
@@ -232,6 +216,36 @@ for (i in seq(1, length(booking$room_data))) {
 
 # Guardamos los resultados en una nueva columna.
 booking$min_price <- min_price_vector
+
+# Función que encuentra el precio medio del hotel dado un string con la información de las habitaciones
+find_mean_price <- function(text) {
+  if (text=="{}"){
+    return(NA)
+  }
+  a <- gregexpr("([0-9]*', 'room_capacity)", text)
+  price_vec <- c()
+  for (value in a[[1]]){
+    substring <- substr(text, value, value+20)
+    price <- as.numeric(strsplit(substring, "'")[[1]][1])
+    price_vec <- append(price_vec, price)
+  }
+  if (mean(price_vec, na.rm = TRUE) == 0){
+    return(NA)
+  }
+  {
+  return(round(mean(price_vec, na.rm = TRUE), 2))
+  }
+}
+
+# Aplicamos la función a todos los valores
+
+mean_price_vector <- c()
+for (i in seq(1, length(booking$room_data))) {
+  mean_price_vector <- append(mean_price_vector, find_mean_price(booking$room_data[i]))
+}
+
+# Guardamos los resultados en una nueva columna.
+booking$mean_price <- mean_price_vector
 
 # Buscamos si hay una habitación en suite
 is_suite_vector <- c()
@@ -287,7 +301,7 @@ booking <- booking %>%
 
 #### 2.2. Ceros y elementos vacíos
 
-Dando paso a el tratamiento de ceros y elementos vacios, lo primero que debemos hacer es identificar aquellas variables en las que encontramos valores faltantes. Como observamos, "postal_code" (19), "longitude" (16), "hotel_score" (8) y el resto de variables relacionadas con los scores (60) presentan valores faltantes.
+Dando paso a el tratamiento de ceros y elementos vacios, lo primero que debemos hacer es identificar aquellas variables en las que encontramos valores faltantes. Como observamos, "postal_code" (19), "longitude" (16), "hotel_score" (8), min y mean_price y el resto de variables relacionadas con los scores (60) presentan valores faltantes.
 
 ```{r}
 sapply(booking, function(y) sum(length(which(is.na(y)))))
@@ -300,8 +314,8 @@ Por lo que respecta a la variable "postal_code" encontramos que en todos aquello
 
 # Comprobamos algunos de los registros donde hay datos faltantes de postal_code
 booking[is.na(booking$postal_code),] %>%
-  dplyr::select(c("city", "month_in", "postal_code", "longitude", "hotel_score", "staff_score", "location_score")) %>%
-  head(10)
+  dplyr::select(c("city", "month_in", "postal_code", "longitude", "hotel_score", "staff_score")) %>%
+  head(3)
 
 # Filtramos los datos para eliminar aquellos registros que tienen NAs en postal_code
 booking <- booking[!is.na(booking$postal_code),]
@@ -356,6 +370,24 @@ booking$value_for_money_score <- kNN(booking)$value_for_money_score
 booking$location_score <- kNN(booking)$location_score
 # Imputamos valores de 0 a la columan free_wifi_score
 booking$free_wifi_score <- ifelse(is.na(booking$free_wifi_score), 0, booking$free_wifi_score)
+
+```
+
+En el caso de los precios, encontramos NAs en aquellos registros que presentaban valores iguales a 0 (no son valores lógicos). En este caso también encontramos que los únicos valores faltantes en estos registros corresponde a precio, por lo que procedemos de la misma forma que con los scores.
+
+```{r}
+
+booking[is.na(booking$min_price),] %>%
+  dplyr::select(c("city", "month_in", "hotel_score", "mean_price", "min_price")) %>%
+  tail(10)
+
+```
+
+```{r}
+
+# Imputamos los datos con K Neirest Neighbours
+booking$mean_price <- kNN(booking)$mean_price
+booking$min_price <- kNN(booking)$min_price 
 
 ```
 
@@ -417,7 +449,8 @@ boxplot.stats(booking$hotel_score)$out
 
 booking %>%
   filter(hotel_score <= 7.0) %>%
-  sample_n(3)
+  dplyr::select(c("hotel_score", "facilities_score", "cleanliness_score", "location_score")) %>%
+  sample_n(5)
 
 ```
 
@@ -659,11 +692,11 @@ booking$free_wifi <- as.numeric(booking$free_wifi)
 
 # Seleccionamos solo las variables numéricas
 booking_numeric <- booking %>%
-  dplyr::select(-c("city", "month_in", "check_in", "month_out", "check_out", "as.integer(!is.na(NA))"))
+  dplyr::select(-c("city", "month_in", "month_out", "as.integer(!is.na(NA))"))
 
 mattmp <- booking_numeric %>%
   dplyr::select(c("adults", "children", "num_rooms", "postal_code", "latitude", "longitude", "hotel_score", "length_description", 
-           "is_suite", "is_apartment", "has_free_cancelation", "min_price", "current_page", "in_page_count", "page_count"))
+           "is_suite", "is_apartment", "has_free_cancelation", "min_price","mean_price", "current_page", "in_page_count", "page_count"))
 
 sapply(mattmp, function(y) sum(is.na(y)))
 
@@ -729,8 +762,8 @@ No obstante cuando evaluamos la posición en la página web observamos que no ha
 cor_mat <- cor(booking_numeric, method = "spearman")
 cor_mat_df <- as.data.frame(cor_mat)
 cor_mat_df %>%
-  arrange(min_price) %>%
-  dplyr::select(min_price)
+  arrange(mean_price) %>%
+  dplyr::select(mean_price, min_price)
 ```
 
 #### 4.1 Selección de los grupos de datos que se quieren analizar
@@ -745,7 +778,7 @@ cor_mat_df %>%
 Para comprobar si los valores de las variables de nuestro dataset se distribuyen o se aproximan a un población distribuida normalmente haremos un análisis visual, con QQ-Plots y Histogramas, y un análisis mediante el test Shapiro-Wilk.
 
 ```{r}
-norm_cols <- c("hotel_score", "length_description", "hotel_score", "staff_score", "facilities_score", "cleanliness_score", "comfort_score", "value_for_money_score", "location_score", "free_wifi_score", "min_price")
+norm_cols <- c("hotel_score", "length_description", "hotel_score", "staff_score", "facilities_score", "cleanliness_score", "comfort_score", "value_for_money_score", "location_score", "free_wifi_score", "min_price", "mean_price")
 
 booking_norm <- booking_numeric %>%
   dplyr::select(norm_cols)
@@ -769,7 +802,7 @@ lapply(booking_norm, shapiro.test)
 A fin de aproximar más los datos a una distribución normal, se propone hacer una transformación de box-cox y comprobar si los datos efectivamente se aproximan más a una normal. Tras llevar a cabo este proceso, si bien los histogramas muestran en algunos casos una distribución "visualmente más normales" y los QQ-plots parecen mostrar que la transformación ha aliviado ligeramente el problema con las colas, los resultados de la transformación no han sido suficientes como para poder considerar que los datos se distribuyen como una normal. No obstante, no debemos preocuparnos demasiado por este problema, pues tenemos suficientes registros como para poder apoyarnos en el Teorema del Límite Central. Por ejemplo, el t-test asume que las medias de las diferentes muestras se distribuyen normalmente (siendo una muestra de más de 30 registros suficiente, como rule of thumb, para que el t-test sea válido aunque los datos no se distribuyan normalmente).
 
 ```{r}
-norm_cols <- c("hotel_score", "length_description", "hotel_score", "staff_score", "facilities_score", "cleanliness_score", "comfort_score", "value_for_money_score", "location_score", "free_wifi_score", "min_price")
+norm_cols <- c("hotel_score", "length_description", "staff_score", "facilities_score", "cleanliness_score", "comfort_score", "value_for_money_score", "location_score", "free_wifi_score", "min_price", "mean_price")
 
 booking_norm$min_price <- ifelse(booking_norm$min_price == 0, 1, booking_norm$min_price)
 booking_norm$free_wifi_score <- ifelse(booking_norm$free_wifi_score == 0, 1, booking_norm$free_wifi_score)
