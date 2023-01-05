@@ -417,7 +417,8 @@ sapply(booking, function(y) sum(y == ""))
 
 #### 2.3. Valores extremos
 
-Los outliers son aquellos datos extremos que dada su distancia con respecto al grueso de la distribución a priori resultan no ser congruentes si los comparamos con la población/muestra analizada. Existen varias vías para detectarlos, no obstante el método más rápdio y común se basa en el uso de boxplots, donde se detectan aquellos valores que se sitúan 1.5 veces más allá del rango intercuartílico con respecto a la mediana. Asimismo, en este trabajo también haremos uso de la función "boxplots.stats()" a fin de detectar, con un output más allá del visual, los outliers que encontramos usando boxplots. Dado que muchas de las variables que hemos generado en la fase de limpieza son dicotómicas, tan solo nos encargaremos de comprobar si existen valores extremos en las columnas de **num_rooms**, **latitude**, **longitude**, **hotel_score** y el resto de **scores del hotel**, **length_description** y **min_price**.
+Los outliers son aquellos datos extremos que dada su distancia con respecto al grueso de la distribución a priori resultan no ser congruentes si los comparamos con la población/muestra analizada. Existen varias vías para detectarlos, no obstante el método más rápdio y común se basa en el uso de boxplots, donde se detectan aquellos valores que se sitúan 1.5 veces más allá del rango intercuartílico con respecto a la mediana. Asimismo, en este trabajo también haremos uso de la función "boxplots.stats()" a fin de detectar, con un output más allá del visual, los outliers que encontramos usando boxplots. Dado que muchas de las variables que hemos generado en la fase de limpieza son dicotómicas, tan solo nos encargaremos de comprobar si existen valores extremos en las columnas de **num_rooms**, **latitude**, **longitude**, **hotel_score** y el resto de **scores del hotel**, **length_description**, **min_price** y **max_price**.
+
 
 ```{r}
 
@@ -429,23 +430,38 @@ boxplot.stats(booking$num_rooms)$out
 
 ```
 
+Empezamos analizando el número de habitaciones y observamos que en las 3 ciudades el número oscila entre 2 y 3 habitaciones para las búsquedas realizadas, lo cual son números razonables, aunque en Valencia esta aparezca como un outlier. Por lo tanto, aceptamos los valores outliers observados en la ciudad de Valencia como valores correctos.
+
+A continuación se analiza la ubicación de los hoteles mediante su longitud y latitud.
+
+
 ```{r}
 
-ggplot(booking, aes(y = latitude))+
-  geom_boxplot(color = "navy", fill = "white")
+ggplot(booking, aes(y = latitude, color = city))+
+  geom_boxplot() +
+  facet_grid(~city)
 
 boxplot.stats(booking$latitude)$out
 
 ```
 
+Observamos que la latitud contiene valores distintos para cada ciudad, como es de esperar al tener cada una una ubicación distinta. En el caso de Valencia vemos una mayor dispersión y tenemos la presencia de algunos outliers, esto es debido a que probablemente, al ser una ciudad más pequeña que Madrid o Barcelona tenga una menor disponibilidad hotelera y algunos de los hoteles hayados no pertenezcan a Valencia ciudad sino a los alrededores de esta.
+
+A continuación evaluaremos si obtenemos un comportamiento similar con la longitud.
+
 ```{r}
 
-ggplot(booking, aes(y = longitude))+
-  geom_boxplot(color = "navy", fill = "white")
+ggplot(booking, aes(y = longitude, color = city))+
+  geom_boxplot() +
+  facet_grid(~city)
 
 boxplot.stats(booking$longitude)$out
 
 ```
+
+Para la longitud obtenemos unos resultados parecidos en los que hay una menor dispersión en los outliers de Valencia. Dado que estas variaciones tan pequeñas que se observan en los resultados son razonables aceptamos los resultados como validos.
+
+A continuación se evalúan las distintas puntuaciones del hotel. 
 
 ```{r}
 
@@ -457,6 +473,10 @@ boxplot.stats(booking$hotel_score)$out
 
 ```
 
+Por un lado observamos que la puntuación general del hotel oscila entre el 8 y el 9 siendo mayor en Madrid que en Barcelona o Valencia. También nos encontramos que hay outliers en las 3 ciudades no obstante todos se hayan en una puntuación entre el 5 y el 10, cuando el rango factible es entre 0 y 10, por lo que pueden ser valores anómalos de hoteles que han obtenido una puntuación más baja de lo normal, pero no por ello deben ser descartados.
+
+A continuación, evaluamos aquellos hoteles que han obtenido una nota o muy baja o excepcionalmente buena para verificar que los resultados sean coherentes.
+
 ```{r}
 
 booking %>%
@@ -466,6 +486,8 @@ booking %>%
 
 ```
 
+Se observa que los hoteles con una mala puntuación lo hacen en la mayoría de sus características, lo que corrobora los resultados obtenidos y no es una sección que ha penalizado a los resultados obtenidos.
+
 ```{r}
 
 booking %>%
@@ -473,6 +495,11 @@ booking %>%
   sample_n(3)
 
 ```
+
+Los hoteles con una puntuación de 10 destacan por obtener esta puntuación en todos los aspectos y tienen unas descripciones relativamente cortas, los precios mínimos y los máximos son muy distantes lo que sorprende. Dado que solo corresponde a 3 registros y que los resultados son razonables, puede corresponder a un hotel nuevo con muy pocas valoraciones, lo que permitiría una nota excepcionalmente alta otorgada por unos pocos clientes.
+
+
+A continuación, se evalúan las instalaciones del hotel.
 
 ```{r}
 
@@ -484,6 +511,10 @@ boxplot.stats(booking$facilities_score)$out
 
 ```
 
+Vemos que los resultados obtenidos continuan en la línea anterior con algunos outliers en Barcelona o Valencia, pero con resultados lógicos.
+
+A continuación evaluamos aquellos hoteles que han obtenido una nota inferior al 6.5 para identificar si se trata de un error o no.
+
 ```{r}
 
 booking %>%
@@ -491,6 +522,8 @@ booking %>%
   sample_n(3)
 
 ```
+
+Observamos que los hoteles parecen tener unas características consistentes y que la extracción de características ha sido correcta por lo que no podemos atribuir los resultados a un error sino meramente a una baja calidad del hotel.
 
 ```{r}
 
@@ -502,6 +535,10 @@ boxplot.stats(booking$staff_score)$out
 
 ```
 
+Para la puntuación otorgada a los trabajadores del hotel obtenemos unos resultados similares a los previos, con la diferencia de que en este apartado la puntuación promedio es más elevada rondando el 9 en las 3 ciudades y todas presentan outliers con valores inferiores.
+
+Evaluamos aquellos resultados con puntuaciones muy bajas.
+
 ```{r}
 
 booking %>%
@@ -509,6 +546,10 @@ booking %>%
   sample_n(3)
 
 ```
+
+De los resultados obtenidos sorprende uno en Valencia que tiene unas puntuaciones muy elevadas excepto en **staff_score** la cual es bastante baja. Si nos fijamos estas puntuaciones son muy exactas (10.0, 9.0, 7.5 o 5.0) lo cual puede venir dado por un número de puntuaciones muy reducidas en las que un cliente ha puntuado de forma muy negativa este aspecto. No por ello eliminaremos el registro o lo modificaremos ya que es razonable el resultado, y afectará en la posición que presenta el hotel en el buscador.
+
+A continuación se evalúa la limpieza del hotel.
 
 ```{r}
 
@@ -520,6 +561,8 @@ boxplot.stats(booking$cleanliness_score)$out
 
 ```
 
+Observamos unos resultados muy similares a los anteriores. Para descartar algún error observamos aquellos registros con puntuaciones excepcionalmente bajas.
+
 ```{r}
 
 booking %>%
@@ -527,6 +570,10 @@ booking %>%
   sample_n(3)
 
 ```
+
+Vemos un comportamiento razonable en estos hoteles, por lo que, siendo resultados razonables, aceptamos estos valores outliers.
+
+A continuación, se valora la puntuación de la comodidad.
 
 ```{r}
 
@@ -600,6 +647,9 @@ booking %>%
 
 ```
 
+
+A continuación se evalúa la longitud de las descripciones.
+
 ```{r}
 
 ggplot(booking, aes(y = length_description, color = city))+
@@ -611,6 +661,10 @@ boxplot.stats(booking$length_description)$out
 ```
 
 
+Observamos que las descripciones tienen una longitud muy similar en las 3 ciudades en torno a las 120-170 palabras, presentando algún outlier por la parte superior, pero siempre con descripciones inferiores a las 400 palabras. Aunque corresponda a una descripción un poco extensa, no parece que corresponda a un outlier sino simplemente a una descripción más extensa de lo habitual.
+
+A continuación evaluaremos el precio mínimo de las habitaciones del hotel.
+
 ```{r}
 
 ggplot(booking, aes(y = min_price, color = city))+
@@ -620,6 +674,10 @@ ggplot(booking, aes(y = min_price, color = city))+
 boxplot.stats(booking$min_price)$out
 
 ```
+
+Observamos que el precio mínimo tiene una gran disparidad oscilando de promedio entre los 100€ y los 500€, siendo Valencia la ciudad con el menor rango intercuartil con presencia de outliers en el rango superior de precios, con alguna habitación con precios cercanos a los 1000€, que aunque puedan parecer caros, son razonables en algún hotel de lujo de la ciudad.
+
+A continuación se evalúan los precios máximos.
 
 ```{r}
 
@@ -631,7 +689,14 @@ boxplot.stats(booking$min_price)$out
 
 ```
 
+Observamos unos precios promedio mucho más elevados con un mayor rango intercuartil en la ciudad de Valencia, lo que sorprende al ser lo contrario que con los precios mínimos. También se observa que los outliers en este caso aparecen por el lado inferior especialmente en la ciudad de Madrid, aunque con precios positivos, que podrían corresponder a hoteles muy económicos o albergues.
+
+Por otro lado sorprende ver que los precios máximos no superan el valor máximo observado en el precio mínimo, lo que se puede atribuir a que aquellos hoteles con precios muy elevados no ofrecían una variedad de habitaciones y precios.
+
+
 #### 2.4. Exportación de los datos postprocesados
+
+Una vez se han procesado los datos, se exportaran a un fichero CSV.
 
 ```{r}
 
@@ -834,7 +899,7 @@ Para comprobar si los valores de las variables de nuestro dataset se distribuyen
 
 ```{r}
 
-norm_cols <- c("value_for_money_score", "comfort_score", "hotel_score", "staff_score", "cleanliness_score", "location_score", "facilities_score")
+norm_cols <- c("value_for_money_score", "comfort_score", "hotel_score", "staff_score", "cleanliness_score", "location_score", "facilities_score", "length_description", "min_price", "max_price")
 
 booking_norm <- booking_numeric %>%
   dplyr::select(norm_cols)
@@ -878,8 +943,9 @@ PARA VER A QUÉ VARIABLES HAGO EL TEST TENGO QUE VER QUE TEST APLICAS EN LA SIGU
 
 ```{r}
 
-ggplot(booking, aes(x = city, y = min_price, color = city)) + 
-  geom_boxplot()
+ggplot(booking, aes(x = page_count, y = min_price, color = city)) + 
+  geom_point()
+  
 
 ```
 
@@ -891,8 +957,8 @@ fligner.test(min_price ~ city, data = booking)
 
 ```{r}
 
-ggplot(booking, aes(x = month, y = min_price, color = month)) + 
-  geom_boxplot()
+ggplot(booking, aes(x = page_count, y = min_price, color = month)) + 
+  geom_point()
 
 ```
 
@@ -905,8 +971,8 @@ fligner.test(max_price ~ month, data = booking)
 ```{r}
 
 booking$current_page <- as.factor(booking$current_page)
-ggplot(booking, aes(x = current_page, y = min_price, color = current_page)) + 
-  geom_boxplot()
+ggplot(booking, aes(x = page_count, y = min_price, color = current_page)) + 
+  geom_point()
 
 ```
 
@@ -917,9 +983,63 @@ fligner.test(min_price ~ current_page, data = booking)
 ```
 
 #### 4.3 Aplicación de pruebas estadísticas para comparar los grupos de datos
+En este apartado se aplicarán distintas pruebas estadísticas para comparar los distintos grupos de datos de los que disponemos y ver cual es su relación con la variable objetivo. Esto nos permitirá evaluar que variables tienen un impacto significativo sobre la variable objetivo y cuales no.
+Nuestra variable objetivo es la posición en la página (page_count) y relacionada directamente la página en la que aparece (current_page), por lo que las distintas hipótesis que se plantean están asociadas con la influencia de distintas variables sobre el posicinamiento de un hotel en Booking. A continuación se recogen unas hipótesis, aunque sería posible evaluar otras, que también pareciesen interesantes, dado el carácter académico de este trabajo nos centraremos exclusivamente en estudiar la influencia de las variables:
 
+* **free_wifi**
+* **has_free_cancelation**
+* **hotel_score**
+* **min_price**
+
+Las hipótesis que trataremos de verificar serán las siguientes:
+
+* Aquellos hoteles con wifi tendrán una mejor posición (page_count inferior) a los que no dispongan de wifi
+* Los hoteles con cancelación gratuita tendrán una posición diferente a los que no dispongan de esta.
+* Los hoteles con una puntuación global superior a un 9 tendrán un mejor posicionamiento.
+* Los hoteles con un precio mínimo inferior a la media tendrán un mejor posicionamiento.
+
+A continuación se estudiará cada una de estas hipótesis y el resultado obtenido.
+
+**Hipótesis 1**
+La primera hipótesis evalúa la influencia del wifi en el posicionamiento del hotel, suponiendo que un hotel con wifi gratuito tendrá un posicionamiento mejor, es decir menor **page_count** que un hotel que no disponga de wifi gratuito. A continuación se plantea la hipótesis nula ($H_{0}$) y la alternativa ($H_{1}$).
+
+
+* $H_{0}:$ La posición global de un hotel con wifi gratuito y uno sin serán iguales.
+* $H_{1}:$ La posición global de un hotel con wifi gratuito será mejor (inferior) a la de uno sin.
+
+TEST NO PARAMETRICO AL NO PODER ASUMIR LA NORMALIDAD DE LOS DATOS
+
+**Hipótesis 2**
+Esta segunda hipótesis trata de evaluar la influencia de la cancelación gratuita, la cual para aportar una mayor diversidad en los análisis realizados, puede estar asociada a una posición distinta (inferior o superior) que la de un hotel sin cancelación gratuita. Definimos esta hipótesis mediante las hipótesis nula ($H_{0}$) y alternativa ($H_{1}$) siguientes:
+
+* $H_{0}:$ La posición global de un hotel con cancelación gratuita y uno sin serán iguales.
+* $H_{1}:$ La posición global de un hotel con cancelación gratuita será distinta a la de uno sin.
+
+TEST NO PARAMETRICO AL NO PODER ASUMIR LA NORMALIDAD DE LOS DATOS
+
+**Hipótesis 3**
+A continuación evaluamos la influencia de la puntuación global del hotel. En este caso evaluaremos si un hotel con una puntuación global (**hotel_score**) superior o igual a un 9.0 obtiene un mejor posicionamiento que un hotel con una peor puntuación. A continuación se plantea la hipótesis nula ($H_{0}$) y la alternativa ($H_{1}$)
+
+Los hoteles con una puntuación global superior a un 9 tendrán un mejor posicionamiento.
+
+* $H_{0}:$ La posición global de un hotel con una puntuación global mayor o igual a 9.0 y uno con una puntuación inferior serán iguales.
+* $H_{1}:$ La posición global de un hotel con una puntuación global mayor o igual a 9.0 será mejor (menor) que uno con una puntuación inferior.
+
+TEST NO PARAMETRICO AL NO PODER ASUMIR LA NORMALIDAD DE LOS DATOS
+
+**Hipótesis 4**
+Finalmente evaluamos la influencia del precio mínimo del hotel considerando que un hotel con un menor precio mínimo tendrá un mejor posicionamiento. Para ello consideraremos las siguientes hipótesis nula ($H_{0}$) y alternativa ($H_{1}$)
+
+Los hoteles con un precio mínimo inferior a la media tendrán un mejor posicionamiento.
+
+* $H_{0}:$ La posición global de un hotel con precio mínimo inferior a la media y uno superior serán iguales.
+* $H_{1}:$ La posición global de un hotel con precio mínimo inferior a la media será mejor (inferior) a la de uno con precio superior.
+
+TEST NO PARAMETRICO AL NO PODER ASUMIR LA NORMALIDAD DE LOS DATOS
 
 #### 4.4 Aplicación de funciones lineales para resolución del problema
+Una vez analizados los distintos contrastes de hipótesis y hayada la correlación entre las distintas variables, tenemos un conocimiento del conjunto de datos lo suficientemente extenso como para analizar mediante una función lineal el posicionamiento de un hotel en el buscador de Booking.
+
 
 
 ## 5. REPRESENTACIÓN DE LOS RESULTADOS
