@@ -123,13 +123,16 @@ booking <- booking %>%
 booking[columns] <- apply(booking[columns], 2, readr::parse_number)
 ```
 
-Dado que de las fechas tan sólo nos interesa el mes en el que se realiza la reserva (un alojamiento con unas características determinadas podría estar mejor posicionado en un determinado mes que en otro o tener un precio distinto) procedemos a extraer dicha información de las variables check-in y check-out, eliminando estas últimas en el proceso.
+Dado que de las fechas tan sólo nos interesa el mes en el que se realiza la reserva (un alojamiento con unas características determinadas podría estar mejor posicionado en un determinado mes que en otro o tener un precio distinto) procedemos a extraer dicha información de las variables check-in y check-out, eliminando estas últimas en el proceso. De hecho, dado que los datos que hemos extraído corresponden al mismo mes en todos los registros, tan sólo nos quedaremos con una columna de mes. Asimismo, no crearemos una columna is_june, pues la dejaremos como caso base, es decir, cuando no sea ninguna de las otras dos opciones (o Diciembre o Marzo).
 
 ```{r}
 booking <- booking %>%
   # Separamos el nombre del mes del resto de elementos del registro para check_in y check_out. Eliminamos las columnas en el proceso.
-  separate(check.in, c(NA, "month_in", NA), sep = "-") %>%
-  separate(check.out, c(NA, "month_out", NA), sep = "-")
+  separate(check.in, c(NA, "month", NA), sep = "-") %>%
+  # Eliminamos también check-out del dataset
+  dplyr::select(-c("check.out")) %>%
+  mutate(is_december = ifelse(month == "December", 1, 0),
+         is_march = ifelse(month == "March", 1, 0))
 ```
 
 De la columna address tan sólo nos interesa el código postal (el barrio no se incluye en todos los registros a diferencia del CP, así que hemos optado por quedarnos con estos valores), por lo que extraemos dicha información para crear una nueva columna llamada postal_code, eliminando la información redundante en el proceso.
@@ -178,7 +181,7 @@ booking <- booking %>%
 
 Finalmente, en la columna Room_data, se incluye mucha información referente a los tipos de habitaciones disponibles, precios, características, etc. Esta se había extraído de esta forma con el objetivo de procesarla mediante un diccionario de Python. No obstante, al haber optado por un procesado con R este se complicará un poco más. En esta columna tenemos distintos datos que pueden ser muy relevantes, de los cuales extraeremos los siguientes:
 •	min_price: Precio de la habitación más económica.
-•	mean_price: Precio medio de las habitaciones del hotel.
+•	max_price: Precio medio de las habitaciones del hotel.
 •	suite_available: Una de las habitaciones es de tipo suite.
 •	apartment_available: Una de las habitaciones es de tipo apartamento.
 •	free_cancelation_available: Alguna de las habitaciones tiene cancelación gratuita.
@@ -220,35 +223,41 @@ for (i in seq(1, length(booking$room_data))) {
 # Guardamos los resultados en una nueva columna.
 booking$min_price <- min_price_vector
 
-# Función que encuentra el precio medio del hotel dado un string con la información de las habitaciones
-find_mean_price <- function(text) {
+# Función que encuentra el precio máximo de la habitación dado un string con la información de las habitaciones
+find_max_price <- function(text) {
   if (text=="{}"){
     return(NA)
   }
   a <- gregexpr("([0-9]*', 'room_capacity)", text)
-  price_vec <- c()
+  
+  max_price <- NA
   for (value in a[[1]]){
     substring <- substr(text, value, value+20)
     price <- as.numeric(strsplit(substring, "'")[[1]][1])
-    price_vec <- append(price_vec, price)
+    if (is.na(max_price)) {
+      max_price <- price
+    }
+    
+    if (price > max_price) {
+      max_price <- price
+    } 
   }
-  if (mean(price_vec, na.rm = TRUE) == 0){
+  if (max_price == 0){
     return(NA)
   }
-  {
-  return(round(mean(price_vec, na.rm = TRUE), 2))
+  else {
+    return(max_price)
   }
 }
 
 # Aplicamos la función a todos los valores
-
-mean_price_vector <- c()
+max_price_vector <- c()
 for (i in seq(1, length(booking$room_data))) {
-  mean_price_vector <- append(mean_price_vector, find_mean_price(booking$room_data[i]))
+  max_price_vector <- append(max_price_vector, find_max_price(booking$room_data[i]))
 }
 
 # Guardamos los resultados en una nueva columna.
-booking$mean_price <- mean_price_vector
+booking$max_price <- max_price_vector
 
 # Buscamos si hay una habitación en suite
 is_suite_vector <- c()
@@ -304,7 +313,7 @@ booking <- booking %>%
 
 #### 2.2. Ceros y elementos vacíos
 
-Dando paso a el tratamiento de ceros y elementos vacios, lo primero que debemos hacer es identificar aquellas variables en las que encontramos valores faltantes. Como observamos, "postal_code" (19), "longitude" (16), "hotel_score" (8), min y mean_price y el resto de variables relacionadas con los scores (60) presentan valores faltantes, destacando free_wifi_score con 423 registros faltantes, consecuencia con toda seguridad de la ausencia de este servicio en dichos hoteles.
+Dando paso a el tratamiento de ceros y elementos vacios, lo primero que debemos hacer es identificar aquellas variables en las que encontramos valores faltantes. Como observamos, "postal_code" (19), "longitude" (16), "hotel_score" (8), min (45) y max_price (17) y el resto de variables relacionadas con los scores (60) presentan valores faltantes, destacando free_wifi_score con 423 registros faltantes, consecuencia con toda seguridad de la ausencia de este servicio en dichos hoteles.
 
 ```{r}
 sapply(booking, function(y) sum(length(which(is.na(y)))))
@@ -317,7 +326,7 @@ Por lo que respecta a la variable "postal_code" encontramos que en todos aquello
 
 # Comprobamos algunos de los registros donde hay datos faltantes de postal_code
 booking[is.na(booking$postal_code),] %>%
-  dplyr::select(c("city", "month_in", "postal_code", "longitude", "hotel_score", "staff_score")) %>%
+  dplyr::select(c("city", "month", "postal_code", "longitude", "hotel_score", "staff_score")) %>%
   head(3)
 
 # Filtramos los datos para eliminar aquellos registros que tienen NAs en postal_code
@@ -337,7 +346,7 @@ A continuación, analizamos los datos faltantes de hotel_score. En este caso, en
 
 # Comprobamos algunos de los registros donde hay datos faltantes de hotel_score
 booking[is.na(booking$hotel_score),] %>%
-  dplyr::select(c("city", "month_in", "hotel_score", "staff_score", "location_score", "longitude", "facilities_score", "cleanliness_score", "comfort_score")) %>%
+  dplyr::select(c("city", "month", "hotel_score", "staff_score", "location_score", "longitude", "facilities_score", "cleanliness_score", "comfort_score")) %>%
   head(5)
 
 ```
@@ -346,11 +355,11 @@ booking[is.na(booking$hotel_score),] %>%
 
 # Comprobamos algunos de los registros donde hay datos faltantes de hotel_score
 booking[booking$hotel_score == "-1",] %>%
-  dplyr::select(c("city", "month_in", "hotel_score", "staff_score", "location_score", "longitude", "facilities_score", "cleanliness_score", "comfort_score")) %>%
+  dplyr::select(c("city", "month", "hotel_score", "staff_score", "location_score", "longitude", "facilities_score", "cleanliness_score", "comfort_score")) %>%
   tail(5)
 
 booking[booking$hotel_score == "-1",] %>%
-  dplyr::select(c("city", "month_in", "hotel_score", "staff_score", "free_wifi_score", "free_wifi")) %>%
+  dplyr::select(c("city", "month", "hotel_score", "staff_score", "free_wifi_score", "free_wifi")) %>%
   tail(10)
 
 
@@ -381,7 +390,7 @@ En el caso de los precios, encontramos NAs en aquellos registros que presentaban
 ```{r}
 
 booking[is.na(booking$min_price),] %>%
-  dplyr::select(c("city", "month_in", "hotel_score", "mean_price", "min_price")) %>%
+  dplyr::select(c("city", "month", "hotel_score", "max_price", "min_price")) %>%
   tail(10)
 
 ```
@@ -389,7 +398,7 @@ booking[is.na(booking$min_price),] %>%
 ```{r}
 
 # Imputamos los datos con K Neirest Neighbours
-booking$mean_price <- kNN(booking)$mean_price
+booking$max_price <- kNN(booking)$max_price
 booking$min_price <- kNN(booking)$min_price 
 
 ```
@@ -612,7 +621,15 @@ boxplot.stats(booking$min_price)$out
 
 ```
 
+```{r}
 
+ggplot(booking, aes(y = max_price, color = city))+
+  geom_boxplot() +
+  facet_grid(~city)
+
+boxplot.stats(booking$min_price)$out
+
+```
 
 #### 2.4. Exportación de los datos postprocesados
 
@@ -666,7 +683,7 @@ final_flights <- unique(proc_flights)
 
 # Hacemos un merge con bookings
 booking <- booking %>%
-  merge(final_flights, by.x = c("city", "month_in"), by.y = c("city_airp", "month_name"))
+  merge(final_flights, by.x = c("city", "month"), by.y = c("city_airp", "month_name"))
 ```
 
 
@@ -695,11 +712,11 @@ booking$free_wifi <- as.numeric(booking$free_wifi)
 
 # Seleccionamos solo las variables numéricas
 booking_numeric <- booking %>%
-  dplyr::select(-c("city", "month_in", "month_out", "as.integer(!is.na(NA))"))
+  dplyr::select(-c("city", "month", "as.integer(!is.na(NA))"))
 
 mattmp <- booking_numeric %>%
   dplyr::select(c("adults", "children", "num_rooms", "postal_code", "latitude", "longitude", "hotel_score", "length_description", 
-           "is_suite", "is_apartment", "has_free_cancelation", "min_price","mean_price", "current_page", "in_page_count", "page_count"))
+           "is_suite", "is_apartment", "has_free_cancelation", "min_price","max_price", "current_page", "in_page_count", "page_count"))
 
 sapply(mattmp, function(y) sum(is.na(y)))
 
@@ -712,7 +729,7 @@ corrplot(cor_mat, method="color", type = "lower", tl.col = "black", tl.srt = 45,
 ```{r}
 mattmp <- booking_numeric %>%
   dplyr::select(c("hotel_score", "staff_score", "facilities_score", "cleanliness_score", "comfort_score", "value_for_money_score", "location_score",
-           "mean_flights", "free_wifi_score", "min_price", "mean_price", "current_page", "in_page_count", "page_count"))
+           "mean_flights", "free_wifi_score", "is_december", "is_march", "min_price", "max_price", "current_page", "in_page_count", "page_count"))
 
 sapply(mattmp, function(y) sum(is.na(y)))
 
@@ -726,7 +743,7 @@ corrplot(cor_mat, method="color", type = "lower", tl.col = "black", tl.srt = 45,
 ```{r}
 mattmp <- booking_numeric %>%
   dplyr::select(c("balcony", "swimming_pool", "pet_friendly", "kitchen", "city_view", "aparments", "non_smoking_rooms", "hotel_score", 
-           "private_bathroom", "elevator", "heating", "safe", "air_conditioning", "free_wifi", "mean_price", "min_price", "current_page", "in_page_count", "page_count"))
+           "private_bathroom", "elevator", "heating", "safe", "air_conditioning", "free_wifi", "max_price", "min_price", "current_page", "in_page_count", "page_count"))
 
 sapply(mattmp, function(y) sum(is.na(y)))
 
@@ -737,7 +754,7 @@ plot.window(xlim=c(-2,2), ylim=c(5,10))
 corrplot(cor_mat, method="color", type = "lower", tl.col = "black", tl.srt = 45, diag = FALSE, tl.cex = 0.55, addCoef.col = 'black', number.cex = 0.5)
 ```
 
-Como bien se puede observar en las matrices, las varialbes que recogen las distintas puntuaciones estan correlacionadas entre ellas, por lo que un hotel que haya obtenido una puntuación elevada en un aspecto generalmente también lo obtendrá en el resto. Este factor es de especial interés si se seleccionan varias columnas de este tipo, pues corremos el riesgo de sufrir un problema de multicolinealidad. También encontramos que los hoteles con distintas atributos como aire acondicionado o baño privado suelen tener el resto de servicios adicionales, aunque este factor puede deberse a que es más habitual encontrar este tipo de elementos en una habitación de hotel, por lo que es común que cuando exista una habitación con calefacción, por ejemplo, también tenga aire acondicionado o baños privado. Por último, aunque es evidente, cabe destacar que las mayores colinealidades las tenemos con variables directamente relacionadas o que presentan información de la misma fuente (current_page con page_count o mean_price con min_price). No obstante, esto no es un problema, pues eliminaremos estas variables del conjunto de entrenamiento para no incurrir en "data leakage".
+Como bien se puede observar en las matrices, las varialbes que recogen las distintas puntuaciones estan correlacionadas entre ellas, por lo que un hotel que haya obtenido una puntuación elevada en un aspecto generalmente también lo obtendrá en el resto. Este factor es de especial interés si se seleccionan varias columnas de este tipo, pues corremos el riesgo de sufrir un problema de multicolinealidad. También encontramos que los hoteles con distintas atributos como aire acondicionado o baño privado suelen tener el resto de servicios adicionales, aunque este factor puede deberse a que es más habitual encontrar este tipo de elementos en una habitación de hotel, por lo que es común que cuando exista una habitación con calefacción, por ejemplo, también tenga aire acondicionado o baños privado. Por último, aunque es evidente, cabe destacar que las mayores colinealidades las tenemos con variables directamente relacionadas o que presentan información de la misma fuente (current_page con page_count o max_price con min_price). No obstante, esto no es un problema, pues eliminaremos estas variables del conjunto de entrenamiento para no incurrir en "data leakage".
 
 ```{r}
 # Filtramos para obtener cuales son las variables más correlacionadas con nuestra variable objetivo, current_page
@@ -770,12 +787,10 @@ No obstante cuando evaluamos la posición en la página web observamos que no ha
 Mientras que la variable dependiente será **page_count**
 
 ```{r}
-X_pcount <- booking_numeric %>%
+booking_pcount <- booking_numeric %>%
   dplyr::select(c("kitchen", "is_apartment", "adults", "air_conditioning", "elevator", "private_bathroom",
            "num_rooms", "value_for_money_score", "heating", "non_smoking_rooms", "comfort_score", "hotel_score",
-           "longitude", "has_free_cancelation"))
-y_pcount <- booking_numeric %>%
-  dplyr::select("page_count")
+           "longitude", "has_free_cancelation", "page_count"))
 ```
 
 En el caso del problema a resolver relacionado con el precio, al analizar las correlaciones sí que encontramos valores entre 0.15 y 0.20. Aunque estas correlaciones no sean muy elevadas nos ofrecen un escenario más prometedor que el anteriormente presentado. A continuación, procedemos a seguir con el mismo procedimiento que con page_count, esta vez seleccionando las siguientes variables:
@@ -802,17 +817,15 @@ En el caso del problema a resolver relacionado con el precio, al analizar las co
 cor_mat <- cor(booking_numeric, method = "spearman")
 cor_mat_df <- as.data.frame(cor_mat)
 cor_mat_df %>%
-  filter(abs(mean_price) > 0.1) %>%
-  filter(mean_price < 0.95) %>%
-  arrange(mean_price) %>%
-  dplyr::select(mean_price, min_price)
+  filter(abs(max_price) > 0.1) %>%
+  filter(max_price < 0.95) %>%
+  arrange(max_price) %>%
+  dplyr::select(max_price)
 
-X_price <- booking_numeric %>%
-  dplyr::select(c("postal_code", "elevator", "heating", "cleanliness_score", "latitude", "mean_flights",
-           "location_score", "hotel_score", "facilities_score", "non_smoking_rooms", "comfort_score", "is_apartment",
-           "private_bathroom", "kitchen", "air_conditioning"))
-y_price <- booking_numeric %>%
-  dplyr::select("mean_price")
+booking_price <- booking_numeric %>%
+  dplyr::select(c("postal_code", "balcony", "latitude", "air_conditioning", "private_bathroom", "staff_score", "swimming_pool",
+                  "location_score", "non_smoking_rooms", "mean_flights", "length_description", "facilities_score", "hotel_score",
+                  "safe", "cleanliness_score", "comfort_score", "max_price"))
 ```
 
 #### 4.2 Comprobación de la normalidad y homogeneidad de la varianza
@@ -821,7 +834,7 @@ Para comprobar si los valores de las variables de nuestro dataset se distribuyen
 
 ```{r}
 
-norm_cols <- c("value_for_money_score", "comfort_score", "hotel_score", "cleanliness_score", "location_score", "facilities_score")
+norm_cols <- c("value_for_money_score", "comfort_score", "hotel_score", "staff_score", "cleanliness_score", "location_score", "facilities_score")
 
 booking_norm <- booking_numeric %>%
   dplyr::select(norm_cols)
@@ -878,14 +891,14 @@ fligner.test(min_price ~ city, data = booking)
 
 ```{r}
 
-ggplot(booking, aes(x = month_in, y = min_price, color = month_in)) + 
+ggplot(booking, aes(x = month, y = min_price, color = month)) + 
   geom_boxplot()
 
 ```
 
 ```{r}
 
-fligner.test(min_price ~ month_in, data = booking)
+fligner.test(max_price ~ month, data = booking)
 
 ```
 
@@ -904,7 +917,6 @@ fligner.test(min_price ~ current_page, data = booking)
 ```
 
 #### 4.3 Aplicación de pruebas estadísticas para comparar los grupos de datos
-
 
 
 #### 4.4 Aplicación de funciones lineales para resolución del problema
