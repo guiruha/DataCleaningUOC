@@ -979,7 +979,49 @@ La primera hipótesis evalúa la influencia del wifi en el posicionamiento del h
 * $H_{0}:$ La posición global de un hotel con wifi gratuito y uno sin serán iguales.
 * $H_{1}:$ La posición global de un hotel con wifi gratuito será mejor (inferior) a la de uno sin.
 
-TEST NO PARAMETRICO AL NO PODER ASUMIR LA NORMALIDAD DE LOS DATOS
+O en otras palabras:
+
+* $H_{0}: \mu_0 = \mu_1$
+* $H_{1}: \mu_0 \le \mu_1$
+
+En este caso se trata de un **contraste de hipótesis de dos muestras independientes sobre la media con varianzas conocidas**. Aunque previamente no se ha cumplido la normalidad de los datos por el Teorema del Límite Central podemos considerar la normalidad de los datos y aplicar un test paramétrico. En este caso aplicaremos un **test unilateral por la izquierda**.
+
+```{r}
+# Buscamos el conjunto de datos de estudio:
+X1 <- booking %>%
+  filter(air_conditioning==1) %>%
+  dplyr::select("page_count")
+X1 <- as.vector(unlist(X1),'numeric')
+
+X2 <- booking %>%
+  filter(air_conditioning==0) %>%
+  dplyr::select("page_count")
+X2 <- as.vector(unlist(X2),'numeric')
+
+# Buscamos la varianza de ambas variables
+var1 <- var(X1)
+var2 <- var(X2)
+
+# Definimos el nivel de confianza al 95%
+alfa <- 0.05
+
+# Buscamos las medias y la el número de registros en cada variable
+mean1 <- mean(X1); n1 <- length(X1)
+mean2 <- mean(X2); n2 <- length(X2)
+
+# Calculamos el valor observado y el valor crítico
+zobs <- (mean1-mean2)/sqrt(var1/n1 + var2/n2)
+zcrit <- qnorm(1-alfa)
+
+# Finalmente calculamos el pvalue
+pvalue <- pnorm(zobs, lower.tail=TRUE)
+print(paste("The p-value obtained is: ", pvalue))
+# Mostramos las medias de las dos variables
+print(paste("The mean of the group 1 is: ", mean(X1)))
+print(paste("The mean of the group 2 is: ", mean(X2)))
+```
+
+Se obtiene un p-value muy cercano a 0, y muy inferior a 0.05, por lo que podemos rechazar la hipótesis nula y considerar que **la presencia de aire acondicionado en una hotel mejorará el posicionamiento de este en el buscador de Booking**. Esto se observa también al obtener una media de posicionamiento inferior en más de 9 posiciones en aquellos hoteles con aire acondicionado.
 
 **Hipótesis 2**
 Esta segunda hipótesis trata de evaluar la influencia de la cancelación gratuita, la cual para aportar una mayor diversidad en los análisis realizados, puede estar asociada a una posición distinta (inferior o superior) que la de un hotel sin cancelación gratuita. Definimos esta hipótesis mediante las hipótesis nula ($H_{0}$) y alternativa ($H_{1}$) siguientes:
@@ -987,7 +1029,49 @@ Esta segunda hipótesis trata de evaluar la influencia de la cancelación gratui
 * $H_{0}:$ La posición global de un hotel con cancelación gratuita y uno sin serán iguales.
 * $H_{1}:$ La posición global de un hotel con cancelación gratuita será distinta a la de uno sin.
 
-TEST NO PARAMETRICO AL NO PODER ASUMIR LA NORMALIDAD DE LOS DATOS
+O en otras palabras:
+
+* $H_{0}: \mu_0 = \mu_1$
+* $H_{1}: \mu_0 \neq \mu_1$
+
+En este caso se trata de un **contraste de hipótesis de dos muestras independientes sobre la media con varianzas conocidas**, al igual que en el caso anterior por el TLC podemos aceptar la normalidad de los datos y aplicar un test paramétrico, en concreto un **test bilateral**.
+
+```{r}
+# Buscamos el conjunto de datos de estudio:
+X1 <- booking %>%
+  filter(has_free_cancelation==1) %>%
+  dplyr::select("page_count")
+X1 <- as.vector(unlist(X1),'numeric')
+
+X2 <- booking %>%
+  filter(has_free_cancelation==0) %>%
+  dplyr::select("page_count")
+X2 <- as.vector(unlist(X2),'numeric')
+
+# Buscamos la varianza de ambas variables
+var1 <- var(X1)
+var2 <- var(X2)
+
+# Definimos el nivel de confianza al 95%
+alfa <- 0.05
+
+# Buscamos las medias y la el número de registros en cada variable
+mean1 <- mean(X1); n1 <- length(X1)
+mean2 <- mean(X2); n2 <- length(X2)
+
+# Calculamos el valor observado y el valor crítico
+zobs <- (mean1-mean2)/sqrt(var1/n1 + var2/n2)
+zcrit <- qnorm(1-(alfa/2))
+
+# Finalmente calculamos el pvalue
+pvalue <- pnorm(zobs, lower.tail=TRUE)
+print(paste("The p-value obtained is: ", pvalue))
+# Mostramos las medias de las dos variables
+print(paste("The mean of the group 1 is: ", mean(X1)))
+print(paste("The mean of the group 2 is: ", mean(X2)))
+```
+
+Observamos que se obtiene un p-value inferior a 0.05 por lo que debemos rechazar la hipótesis nula y, por lo tanto, obtenemos que **un hotel con cancelación gratuita obtendrá un posicionamiento distinto al de un hotel sin cancelación gratuita**. En concreto se ha observado que los hoteles con cancelación gratuita obtienen un mejor posicionamiento que aquellos sin.
 
 **Hipótesis 3**
 A continuación evaluamos la influencia de la puntuación global del hotel. En este caso evaluaremos si un hotel con una puntuación global (**hotel_score**) superior o igual a un 9.0 obtiene un mejor posicionamiento que un hotel con una peor puntuación. A continuación se plantea la hipótesis nula ($H_{0}$) y la alternativa ($H_{1}$)
@@ -997,7 +1081,49 @@ Los hoteles con una puntuación global superior a un 9 tendrán un mejor posicio
 * $H_{0}:$ La posición global de un hotel con una puntuación global mayor o igual a 9.0 y uno con una puntuación inferior serán iguales.
 * $H_{1}:$ La posición global de un hotel con una puntuación global mayor o igual a 9.0 será mejor (menor) que uno con una puntuación inferior.
 
-TEST NO PARAMETRICO AL NO PODER ASUMIR LA NORMALIDAD DE LOS DATOS
+O en otras palabras:
+
+* $H_{0}: \mu_0 = \mu_1$
+* $H_{1}: \mu_0 \le \mu_1$
+
+En este caso se trata de un **contraste de hipótesis de dos muestras independientes sobre la media con varianzas conococidas**. Al igual que en los casos anteriores podemos asumir la normalidad de los datos por el TLC. En este caso se aplicará un **test bilateral por la izquierda**.
+
+```{r}
+# Buscamos el conjunto de datos de estudio:
+X1 <- booking %>%
+  filter(hotel_score>=9.0) %>%
+  dplyr::select("page_count")
+X1 <- as.vector(unlist(X1),'numeric')
+
+X2 <- booking %>%
+  filter(hotel_score<9.0) %>%
+  dplyr::select("page_count")
+X2 <- as.vector(unlist(X2),'numeric')
+
+# Buscamos la varianza de ambas variables
+var1 <- var(X1)
+var2 <- var(X2)
+
+# Definimos el nivel de confianza al 95%
+alfa <- 0.05
+
+# Buscamos las medias y la el número de registros en cada variable
+mean1 <- mean(X1); n1 <- length(X1)
+mean2 <- mean(X2); n2 <- length(X2)
+
+# Calculamos el valor observado y el valor crítico
+zobs <- (mean1-mean2)/sqrt(var1/n1 + var2/n2)
+zcrit <- qnorm(1-alfa)
+
+# Finalmente calculamos el pvalue
+pvalue <- pnorm(zobs, lower.tail=TRUE)
+print(paste("The p-value obtained is: ", pvalue))
+# Mostramos las medias de las dos variables
+print(paste("The mean of the group 1 is: ", mean(X1)))
+print(paste("The mean of the group 2 is: ", mean(X2)))
+```
+
+Se obtiene un valor del p-value de 0.048, el cual aún siendo muy cercano a 0.05 que utilizamos para el intérvalo de confianza es inferior, por lo que se debe rechazar la hipótesis nula y podemos decir que **un hotel con una puntuación superior a 9.0 obtendrá un mejor posicionamiento que el resto de hoteles**. No obstante, por el valor obtenido podemos determinar que esta variable no es tan influyente como el aire acondicionado o la cancelación gratuita.
 
 **Hipótesis 4**
 Finalmente evaluamos la influencia del precio mínimo del hotel considerando que un hotel con un menor precio mínimo tendrá un mejor posicionamiento. Para ello consideraremos las siguientes hipótesis nula ($H_{0}$) y alternativa ($H_{1}$)
@@ -1007,7 +1133,49 @@ Los hoteles con un precio mínimo inferior a la media tendrán un mejor posicion
 * $H_{0}:$ La posición global de un hotel con precio mínimo inferior a la media y uno superior serán iguales.
 * $H_{1}:$ La posición global de un hotel con precio mínimo inferior a la media será mejor (inferior) a la de uno con precio superior.
 
-TEST NO PARAMETRICO AL NO PODER ASUMIR LA NORMALIDAD DE LOS DATOS
+O en otras palabras:
+
+* $H_{0}: \mu_0 = \mu_1$
+* $H_{1}: \mu_0 \le \mu_1$
+
+En este caso también realizaremos un **contraste de hipótesis de dos muestras independientes sobre la media con varianzas conococidas**. Como se ha visto en los casos anteriores, por el TLC podemos asumir la normalidad de los datos y aplicaremos un test paramétrico, en este caso emplearemos un **test unilateral por la izquierda**.
+
+```{r}
+# Buscamos el conjunto de datos de estudio:
+X1 <- booking %>%
+  filter(min_price<mean(min_price)) %>%
+  dplyr::select("page_count")
+X1 <- as.vector(unlist(X1),'numeric')
+
+X2 <- booking %>%
+  filter(min_price>=mean(min_price)) %>%
+  dplyr::select("page_count")
+X2 <- as.vector(unlist(X2),'numeric')
+
+# Buscamos la varianza de ambas variables
+var1 <- var(X1)
+var2 <- var(X2)
+
+# Definimos el nivel de confianza al 95%
+alfa <- 0.05
+
+# Buscamos las medias y la el número de registros en cada variable
+mean1 <- mean(X1); n1 <- length(X1)
+mean2 <- mean(X2); n2 <- length(X2)
+
+# Calculamos el valor observado y el valor crítico
+zobs <- (mean1-mean2)/sqrt(var1/n1 + var2/n2)
+zcrit <- qnorm(1-alfa)
+
+# Finalmente calculamos el pvalue
+pvalue <- pnorm(zobs, lower.tail=TRUE)
+print(paste("The p-value obtained is: ", pvalue))
+# Mostramos las medias de las dos variables
+print(paste("The mean of the group 1 is: ", mean(X1)))
+print(paste("The mean of the group 2 is: ", mean(X2)))
+```
+
+En este caso se ha obtenido un p-value de 0.99, por lo que se acepta la hipótesis nula y obtenemos que **los hoteles con un precio mínimo inferior a la media no obtiene un mejor posicionamiento que el resto de hoteles**. Es más en este caso se ha observado que que la media de posicionamiento de los hoteles con un precio mínimo superior a la media ha sido ligeramente mejor al resto.
 
 #### 4.4 Aplicación de funciones lineales para resolución del problema
 Una vez analizados los distintos contrastes de hipótesis y hayada la correlación entre las distintas variables, tenemos un conocimiento del conjunto de datos lo suficientemente extenso como para analizar mediante una función lineal el posicionamiento de un hotel en el buscador de Booking.
