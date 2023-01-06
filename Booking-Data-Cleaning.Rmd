@@ -84,15 +84,6 @@ kable(data.frame(var=names(res), clase=as.vector(res)))
 
 Como se ha comentado, existen algunas variables que presentan todavía una estructura no válida para tratarlos estadísticamente o introducirlos en un modelo de data mining. En esta sección nos encargamos de tratar dichas columnas a fin de obtener nuevas variables con un formato adecuado, eliminando a su vez cualquier información que no nos sea de utilidad.
 
-En primer lugar, cabe destacar que no todas las columnas que tenemos disponibles en el dataset nos ofrecen información relevante para nuestro problema. Por tanto, a fin de reducir la dimensionalidad de este, nos encargamos de eliminar las columnas con información redundante (name y search_date).
-
-```{r}
-# Seleccionamos con la función "select" de dplyr todas las columnas excepto name y search_date, que nos van a ser de poca utilidad.
-
-booking <- booking %>%
-  dplyr::select(-c("name", "search_date"))
-```
-
 La columna hotel_coordinates incluye tanto los valores de latitud como los de longitud, separados por una coma. Dado que ambos dos valores nos indican información distinta, pues la latitud nos proporcionar información de la posición en dirección norte o sur del ecuador y la longitud información de la posición en dirección este u oeste, en este caso hemos optado por separarlos en dos columnas distintas.
 
 ```{r}
@@ -100,7 +91,7 @@ La columna hotel_coordinates incluye tanto los valores de latitud como los de lo
 # La columna hotel_coordinates se elimina en el proceso
 
 booking <- booking %>%
-  separate(hotel_coordinates, c("latitude", "longitude"), sep = ",")
+  separate(hotel_coordinates, c("latitude", "longitude"), sep = ",", remove = FALSE)
 
 booking$latitude <- as.numeric(booking$latitude)
 booking$longitude <- as.numeric(booking$longitude)
@@ -116,21 +107,19 @@ columns <-  c("staff_score", "facilities_score", "cleanliness_score", "comfort_s
 # Separamos los strings (diccionarios) en función de las comas y creamos las columnas correspondientes. La primera columna creada es una NA porque todos los primeros registros en cada diccionario están vacíos (por un fallo en la extracción de datos). Estableciendo la columna como NA, indicamos a la función separate que ignore dichos datos y no cree columna alguna para ellos.
 
 booking <- booking %>%
-  separate(hotel_scores, c(NA, "staff_score", "facilities_score", "cleanliness_score", "comfort_score", "value_for_money_score", "location_score", "free_wifi_score"), sep = ",")
+  separate(hotel_scores, c(NA, "staff_score", "facilities_score", "cleanliness_score", "comfort_score", "value_for_money_score", "location_score", "free_wifi_score"), sep = ",", remove = FALSE)
 
 # Extraemos los valores numéricos de cada columna con la función del paquete readr, "parse_number"
 
 booking[columns] <- apply(booking[columns], 2, readr::parse_number)
 ```
 
-Dado que de las fechas tan sólo nos interesa el mes en el que se realiza la reserva (un alojamiento con unas características determinadas podría estar mejor posicionado en un determinado mes que en otro o tener un precio distinto) procedemos a extraer dicha información de las variables check-in y check-out, eliminando estas últimas en el proceso. De hecho, dado que los datos que hemos extraído corresponden al mismo mes en todos los registros, tan sólo nos quedaremos con una columna de mes. Asimismo, no crearemos una columna is_june, pues la dejaremos como caso base, es decir, cuando no sea ninguna de las otras dos opciones (o Diciembre o Marzo).
+Dado que de las fechas tan sólo nos interesa el mes en el que se realiza la reserva (un alojamiento con unas características determinadas podría estar mejor posicionado en un determinado mes que en otro o tener un precio distinto) procedemos a extraer dicha información de las variables check-in y check-out. De hecho, dado que los datos que hemos extraído corresponden al mismo mes en todos los registros, tan sólo nos quedaremos con una columna de mes. Asimismo, no crearemos una columna is_june, pues la dejaremos como caso base, es decir, cuando no sea ninguna de las otras dos opciones (o Diciembre o Marzo).
 
 ```{r}
 booking <- booking %>%
   # Separamos el nombre del mes del resto de elementos del registro para check_in y check_out. Eliminamos las columnas en el proceso.
-  separate(check.in, c(NA, "month", NA), sep = "-") %>%
-  # Eliminamos también check-out del dataset
-  dplyr::select(-c("check.out")) %>%
+  separate(check.in, c(NA, "month", NA), sep = "-", remove = FALSE) %>%
   mutate(is_december = ifelse(month == "December", 1, 0),
          is_march = ifelse(month == "March", 1, 0))
 ```
@@ -142,7 +131,7 @@ De la columna address tan sólo nos interesa el código postal (el barrio no se 
 Sys.setlocale('LC_ALL', 'C')
 # Extraemos los valores de codigo postal de la columna addres utilizando expressiones regulares
 booking <- booking %>%
-  extract(address, c("postal_code"), regex = "( [0-9]{5} )")
+  extract(address, c("postal_code"), regex = "( [0-9]{5} )", remove = FALSE)
 
 ```
 
@@ -150,12 +139,12 @@ Los features, entendidos como servicios adicionales más allá de la propia habi
 
 ```{r}
 # Definimos las features que consideramos que son interesantes. Utilizamos este formato para filtrar por expresión regular.
-feature_list <- c("('Free Wifi')", "('Air conditioning')", "('24-hour front desk')", "('Safe')", "('Heating')", "('Elevator')", "('Private Bathroom')", "('Non-smoking rooms')", "('Aparments')", "('City view')","('Kitchen')", "('Pet Friendly')", "('Swimming pool')", "('Balcony')")
+feature_list <- c("('Free WiFi')", "('Air conditioning')", "('24-hour front desk')", "('Safe')", "('Heating')", "('Elevator')", "('Private Bathroom')", "('Non-smoking rooms')", "('Aparments')", "('City view')","('Kitchen')", "('Pet friendly')", "('Swimming pool')", "('Balcony')")
 
 # Creamos un bucle en el que se recorre cada elemento de la lista de features
 for (feature in feature_list){
   # Se eliminan los parentésis y comillas de la variable local feature para crear el nombre de la columna.
-  col_name <- str_replace(str_replace(str_to_lower(str_extract(feature, "([A-Z][a-z]*( |-)?[A-Z]?[a-z]* ? ?[a-z]*)")), " ", "_"), "-", "_")
+  col_name <- str_replace(str_replace(str_to_lower(str_extract(feature, "([A-Z][a-z]*( |-)?[A-Z]?[a-z]* ? ?[A-Z]?[a-z]*)")), " ", "_"), "-", "_")
   booking <- booking %>%
   # Extraemos el nombre del feature de cada uno de los registros (strings). En caso de que no encuentre ningún valor devuelve un NA.
   extract(features, c(col_name), regex = feature, remove = FALSE) %>%
@@ -163,9 +152,6 @@ for (feature in feature_list){
   mutate_(.dots = setNames(list(paste0("as.integer(!is.na(",col_name,"))")), col_name))
 }
 
-# Eliminamos la columna de features para finalizar
-booking <- booking %>%
-  dplyr::select(-c("features"))
 ```
 
 Por otro lado, nos encontramos con la columna que incluye la descripción del hotel, esta descripción es muy amplia y un análisis profundo de ella requeriría de técnicas de NLP que no son el objetivo de esta práctica. No obstante, consideramos que la longitud de la descripción del hotel sí que puede tener una relación con la posición en el buscador, por lo que transformaremos esta variable a una nueva variable que contenga el número total de palabras que contiene la descripción, eliminando de nuevo dicha columna en el proceso.
@@ -174,16 +160,13 @@ Por otro lado, nos encontramos con la columna que incluye la descripción del ho
 # Evaluamos la longitud de la descripción del hotel
 booking$length_description <- lengths(gregexpr("\\W+", booking$hotel_description)) + 1
 
-# Eliminamos la columna hotel_description
-booking <- booking %>%
-    dplyr::select(-c("hotel_description"))
 ```
 
 Finalmente, en la columna Room_data, se incluye mucha información referente a los tipos de habitaciones disponibles, precios, características, etc. Esta se había extraído de esta forma con el objetivo de procesarla mediante un diccionario de Python. No obstante, al haber optado por un procesado con R este se complicará un poco más. En esta columna tenemos distintos datos que pueden ser muy relevantes, de los cuales extraeremos los siguientes:
 •	min_price: Precio de la habitación más económica.
-•	max_price: Precio medio de las habitaciones del hotel.
+•	max_price: Precio de las habitaciones más caras del hotel.
 •	suite_available: Una de las habitaciones es de tipo suite.
-•	apartment_available: Una de las habitaciones es de tipo apartamento.
+•	is_apartment: Una de las habitaciones es de tipo apartamento.
 •	free_cancelation_available: Alguna de las habitaciones tiene cancelación gratuita.
 
 ```{r}
@@ -304,10 +287,6 @@ for (i in seq(1, length(booking$room_data))) {
 # Guardamos los resultados en una nueva columna.
 booking$has_free_cancelation <- free_cancelation_vector
 
-# Eliminamos la columna correspondiente a room_data
-booking <- booking %>%
-  dplyr::select(-c("room_data"))
-
 ```
 
 
@@ -368,7 +347,7 @@ booking$hotel_score <- ifelse(booking$hotel_score == "-1", NA, booking$hotel_sco
 
 ```
 
-Dado que en este caso tan sólo encontramos datos faltantes en las columnas de score no consideramos eliminar estos registros, sino llevar a cabo una imputación. Aunque se podría haber utilizado una metología más simple como el uso de la media o la mediana, hemos optado por hacer uso de un método más complejo, basado en la similitud entre registros, en concreto llevar a cabo una imputación mediante el algoritmo de K vecinos más próximos. En este caso, la función se encarga de devolver los mismos valores en caso de que ya existan en el dataset y el valor de los registros más "similares" en el caso de un registro con NAs. No obstante, en el caso de "free_wifi_score" tan sólo introduciremos el valor de 0 en aquellos datos con ausencia de valores, pues tras analizar más en detenimiento los registros, aquellos con datos faltantes de free_wifi_score tienen un valor igual a 0 en la columna free_wifi, lo que nos indica ausencia de este servicio en el hotel.
+Dado que en este caso tan sólo encontramos datos faltantes en las columnas de score no consideramos eliminar estos registros, sino llevar a cabo una imputación. Aunque se podría haber utilizado una metología más simple como el uso de la media o la mediana, hemos optado por hacer uso de un método más complejo, basado en la similitud entre registros, en concreto llevar a cabo una imputación mediante el algoritmo de K vecinos más próximos. En este caso, la función se encarga de devolver los mismos valores en caso de que ya existan en el dataset y el valor de los registros más "similares" en el caso de un registro con NAs.
 
 ```{r}
 
@@ -380,8 +359,7 @@ booking$cleanliness_score <- kNN(booking)$cleanliness_score
 booking$comfort_score <- kNN(booking)$comfort_score
 booking$value_for_money_score <- kNN(booking)$value_for_money_score
 booking$location_score <- kNN(booking)$location_score
-# Imputamos valores de 0 a la columan free_wifi_score
-booking$free_wifi_score <- ifelse(is.na(booking$free_wifi_score), 0, booking$free_wifi_score)
+booking$free_wifi_score <- kNN(booking)$free_wifi_score
 
 ```
 
@@ -685,7 +663,7 @@ ggplot(booking, aes(y = max_price, color = city))+
   geom_boxplot() +
   facet_grid(~city)
 
-boxplot.stats(booking$min_price)$out
+boxplot.stats(booking$max_price)$out
 
 ```
 
@@ -694,23 +672,25 @@ Observamos unos precios promedio mucho más elevados con un mayor rango intercua
 Por otro lado sorprende ver que los precios máximos no superan el valor máximo observado en el precio mínimo, lo que se puede atribuir a que aquellos hoteles con precios muy elevados no ofrecían una variedad de habitaciones y precios.
 
 
-#### 2.4. Exportación de los datos postprocesados
+## 3. INTEGRACIÓN Y SELECCIÓN
 
-Una vez se han procesado los datos, se exportaran a un fichero CSV.
+La sección de integración y selección la encontramos tras la de limpieza, pues muchas de las columnas que queriamos descartar han sido tratadas en la fase de limpieza para extraer información de utilidad. Hecho esto, en la presente sección procedemos a eliminar todas las columnas del dataset origial que ya no vamos a necesitar para los siguientes apartados.
 
 ```{r}
+# Seleccionamos con la función "select" de dplyr todas las columnas excepto las que ya hemos limpiado para crear otras, además de aquellasque nos van a ser de poca utilidad.
 
+booking <- booking %>%
+  dplyr::select(-c("name", "search_date", "hotel_coordinates", "hotel_scores", "check.in", "check.out", "address", "features", "hotel_description", "room_data"))
+
+# Exportamos los datos a un archivo csv
 write.csv(booking, "hotel_data_processed.csv")
-
 ```
-
-## 3. INTEGRACIÓN Y SELECCIÓN
 
 En primer lugar, hemos obtado por añadir datos de vuelos por varias razones:
 
-* Un mayor número de vuelos en un mes podría aumentar las búsquedas de hoteles cerca del aeropuerto.
+* Un mayor número de vuelos en un mes podría aumentar las búsquedas de hoteles cerca del aeropuerto o los precios de dichos alojamientos.
 * Un mayor número de vuelos en un mes indica más turismo internacional (en lugar de sólo turismo nacional). Un tipo de turismo que podría estar buscando hoteles con características diferentes a los turistas nacionales.
-* Un mayor número de vuelos en un mes indica más turismo general, lo que puede influir en las estrategias de promoción y ofertas de determinados hoteles, influyendo en última instancia en su posición en el buscador Booking.
+* Un mayor número de vuelos en un mes indica más turismo general, lo que puede influir en las estrategias de promoción y ofertas de determinados hoteles, influyendo en última instancia en su posición en el buscador Booking y, a su vez, directamente en los precios de los hoteles.
 
 ```{r}
 # Leemos los datos de vuelos
@@ -754,17 +734,16 @@ booking <- booking %>%
 
 ## 4. ANÁLISIS DE LOS DATOS
 
-En este apartado se procede a analizar los datos que previamente hemos preprocesado. El objetivo de este trabajo era obtener que factores influenciaban en el posicionamiento de un hotel en el buscador de Booking, para ello se recogieron distintas variables mediante webscrapping, las cuales se han almacenado y preprocesado en el dataframe **booking**.
+A continuación, se evaluará la influencia de las distintas variables sobre la posición de un hotel en el buscador y sobre el precio que este fija para sus habitaciones. Para ello se empleará una matriz de correlaciones (de Spearman, dado que no asumimos normalidad). Una vez obtenidas las variables con mayor correlación con la variable objetivo generaremos una selección de los atributos a analizar, un grupo de variables distinto por cada problema a tratar.
 
-A continuación se evaluará la influencia de las distintas variables sobre la posición de un hotel en el buscador, para ello se emplea una matriz de correlación. Una vez obtenidas las variables con mayor correlación con la variable objetivo generaremos una selección de los grupos de datos a analizar, separando los datos según los valores de estas variables correlacionadas con la variable objetivo.
+Tras generar los distintos grupos procederemos a evaluar la normalidad y la homogeneidad de la varianza para así poder determinar en el siguiente punto que pruebas estadísticas se pueden aplicar.
 
-Una vez generados los distintos grupos procederemos a evaluar la normalidad y la homogeneidad de la varianza para así poder determinar en el siguiente punto que pruebas estadísticas se pueden aplicar.
+Finalmente aplicaremos distintos tests estadísticos adicionales a la correlación hallada inicialmente. Estas pruebas estadísticas incluirán contrastes de hipótesis y regresiones lineales (enfocados dese un punto de vista inferencial, no predictivo).
 
-Finalmente aplicaremos distintas pruebas estadísticas adicionales a la correlación hayada inicialmente. Estas pruebas estadísticas incluirán contrastes de hipótesis y regresiones lineales.
 
 #### 4.1 Correlación con la variable objetivo y selección de los grupos de datos que se quieren analizar
 
-Comenzamos evaluando la correlación entre las distintas variables con nuestra variable objetivo, para ello creamos una matriz de correlación y evaluamos los resultados obtenidos.
+Comenzamos evaluando la correlación (de spearman, dado que no podemos asumir normalidad y utilizamos variables categóricas también) entre las distintas variables con nuestra variable objetivo, para ello creamos una matriz de correlación y evaluamos los resultados obtenidos.
 
 ```{r}
 # Transformamos las variables a numérico
@@ -772,8 +751,9 @@ booking$postal_code <- as.numeric(booking$postal_code)
 booking$latitude <- as.numeric(booking$latitude)
 booking$longitude <- as.numeric(booking$longitude)
 booking$free_wifi <- as.numeric(booking$free_wifi)
-#booking$apartments <- as.numeric(booking$apartments)
-#booking$pet_friendly <- as.numeric(booking$pet_friendly)
+booking$is_apartment <- as.numeric(booking$is_apartment)
+booking$pet_friendly <- as.numeric(booking$pet_friendly)
+booking$page_count <- booking$page_count + 1
 
 # Seleccionamos solo las variables numéricas
 booking_numeric <- booking %>%
@@ -807,7 +787,7 @@ corrplot(cor_mat, method="color", type = "lower", tl.col = "black", tl.srt = 45,
 
 ```{r}
 mattmp <- booking_numeric %>%
-  dplyr::select(c("balcony", "swimming_pool", "pet_friendly", "kitchen", "city_view", "aparments", "non_smoking_rooms", "hotel_score", 
+  dplyr::select(c("balcony", "swimming_pool", "pet_friendly", "kitchen", "city_view", "is_apartment", "non_smoking_rooms", "hotel_score", 
            "private_bathroom", "elevator", "heating", "safe", "air_conditioning", "free_wifi", "max_price", "min_price", "current_page", "in_page_count", "page_count"))
 
 sapply(mattmp, function(y) sum(is.na(y)))
@@ -819,7 +799,7 @@ plot.window(xlim=c(-2,2), ylim=c(5,10))
 corrplot(cor_mat, method="color", type = "lower", tl.col = "black", tl.srt = 45, diag = FALSE, tl.cex = 0.55, addCoef.col = 'black', number.cex = 0.5)
 ```
 
-Como bien se puede observar en las matrices, las varialbes que recogen las distintas puntuaciones estan correlacionadas entre ellas, por lo que un hotel que haya obtenido una puntuación elevada en un aspecto generalmente también lo obtendrá en el resto. Este factor es de especial interés si se seleccionan varias columnas de este tipo, pues corremos el riesgo de sufrir un problema de multicolinealidad. También encontramos que los hoteles con distintas atributos como aire acondicionado o baño privado suelen tener el resto de servicios adicionales, aunque este factor puede deberse a que es más habitual encontrar este tipo de elementos en una habitación de hotel, por lo que es común que cuando exista una habitación con calefacción, por ejemplo, también tenga aire acondicionado o baños privado. Por último, aunque es evidente, cabe destacar que las mayores colinealidades las tenemos con variables directamente relacionadas o que presentan información de la misma fuente (current_page con page_count o max_price con min_price). No obstante, esto no es un problema, pues eliminaremos estas variables del conjunto de entrenamiento para no incurrir en "data leakage".
+Como bien se puede observar en las matrices, las variables que recogen las distintas puntuaciones están correlacionadas entre ellas, por lo que un hotel que haya obtenido una puntuación elevada en un aspecto generalmente también lo obtendrá en el resto. Este factor es de especial interés si se seleccionan varias columnas de este tipo, pues corremos el riesgo de sufrir un problema de multicolinealidad. También encontramos que los hoteles con distintos atributos como aire acondicionado o baño privado suelen tener el resto de servicios adicionales, aunque este factor puede deberse a que es más habitual encontrar este tipo de elementos en una habitación de hotel, por lo que es común que cuando exista una habitación con calefacción, por ejemplo, también tenga aire acondicionado o baños privado. Por último, aunque es evidente, cabe destacar que las mayores colinealidades las tenemos con variables directamente relacionadas o que presentan información de la misma fuente (current_page con page_count o max_price con min_price). No obstante, esto no es un problema, pues eliminaremos estas variables del conjunto de entrenamiento para no incurrir en “data leakage”.
 
 ```{r}
 # Filtramos para obtener cuales son las variables más correlacionadas con nuestra variable objetivo, current_page
@@ -832,24 +812,7 @@ cor_mat_df %>%
   dplyr::select(page_count)
 ```
 
-No obstante cuando evaluamos la posición en la página web observamos que no hay una correlación elevada con ninguna variable, encontrando valores por debajo de 0.12 (en valor absoluto) para todos los casos. No obstante, para el caso de page_count, hemos optado por someter a estudio aquellas variables que presentan mayor correlación de spearman con la variable dependiente (pues evaluando con distintas métricas que buscan determinar el nivel de dependencia no-lineal hemos obtenido resultados similares). Las variables seleccionadas en cuestión son:
-
-* **kitchen**
-* **is_apartment**
-* **adults**
-* **air_conditioning**
-* **elevator**
-* **private_bathroom**
-* **num_rooms**
-* **value_for_money_score**
-* **heating**
-* **non_smoking_rooms**
-* **comfort_score**
-* **hotel_score**
-* **longitude**
-* **has_free_cancelation**
-
-Mientras que la variable dependiente será **page_count**
+Cuando evaluamos la posición en la página web observamos que no hay una correlación elevada con ninguna variable, encontrando valores por debajo de 0.12 (en valor absoluto) para todos los casos. No obstante, para el caso de page_count, hemos optado por someter a estudio aquellas variables que presentan mayor correlación de spearman con la variable dependiente (pues evaluando con distintas métricas que buscan determinar el nivel de dependencia no-lineal hemos obtenido resultados similares). Las variables seleccionadas en cuestión son: kitchen, is_apartment, adults, air_conditioning, elevator, private_bathroom, num_rooms, value_for_money_score, heating, free_wifi, non_smoking_rooms, comfort_score, hotel_score, longitude, facilities_score pet_friendly, mientras que la variable dependiente será page_count.
 
 ```{r}
 booking_pcount <- booking_numeric %>%
@@ -861,6 +824,8 @@ booking_pcount <- booking_numeric %>%
 En el caso del problema a resolver relacionado con el precio, al analizar las correlaciones sí que encontramos valores entre 0.15 y 0.20. Aunque estas correlaciones no sean muy elevadas nos ofrecen un escenario más prometedor que el anteriormente presentado. A continuación, procedemos a seguir con el mismo procedimiento que con page_count, esta vez seleccionando las siguientes variables:
 
 * **postal_code**
+* **balcony**
+* **pet_friendly**
 * **elevator**
 * **heating**
 * **cleanliness_score**
@@ -888,18 +853,18 @@ cor_mat_df %>%
   dplyr::select(max_price)
 
 booking_price <- booking_numeric %>%
-  dplyr::select(c("postal_code", "balcony", "latitude", "air_conditioning", "private_bathroom", "staff_score", "swimming_pool",
-                  "location_score", "non_smoking_rooms", "mean_flights", "length_description", "facilities_score", "hotel_score",
+  dplyr::select(c("postal_code", "balcony", "pet_friendly", "latitude", "air_conditioning", "private_bathroom", "free_wifi", "staff_score",
+                  "swimming_pool", "location_score", "non_smoking_rooms", "mean_flights", "length_description", "facilities_score", "hotel_score",
                   "safe", "cleanliness_score", "comfort_score", "max_price"))
 ```
 
 #### 4.2 Comprobación de la normalidad y homogeneidad de la varianza
 
-Para comprobar si los valores de las variables de nuestro dataset se distribuyen o se aproximan a un población distribuida normalmente haremos un análisis visual, con QQ-Plots y Histogramas, y un análisis mediante el test Shapiro-Wilk.
+Para comprobar si los valores de las variables de nuestro dataset se distribuyen o se aproximan a una población distribuida normalmente haremos un análisis visual, con QQ-Plots y Histogramas, y un análisis mediante el test Shapiro-Wilk. Concretamente solo comprobaremos la normalidad para las variables seleccionadas en el apartado anterior.
 
 ```{r}
 
-norm_cols <- c("value_for_money_score", "comfort_score", "hotel_score", "staff_score", "cleanliness_score", "location_score", "facilities_score", "length_description", "min_price", "max_price")
+norm_cols <- c("value_for_money_score", "comfort_score", "hotel_score", "staff_score", "cleanliness_score", "location_score", "facilities_score", "length_description", "min_price", "max_price", "page_count")
 
 booking_norm <- booking_numeric %>%
   dplyr::select(norm_cols)
@@ -915,15 +880,12 @@ for(i in 1:ncol(booking_norm)){
 Los QQ-plots y los histogramas nos muestran una distribuciones con una evidente asimetría negativa en la mayoría de los casos (excepto variables como length_description que muestran una asimetría más bien positiva, aunque podría ser influencia de un dato extremo que no ha sido considerado outlier), así como un evidente problema con las colas, pues en la mayoría de los casos los puntos se alejan de la línea roja, la cual corresponde a la hipotética distribución normal. Por tanto, a priori podríamos rechazar la hipótesis de normalidad de las variables. No obstante, tras ejecutar el test Shapiro-Wilk confirmamos de forma más fiable nuestras primeras conclusiones, pues todos los p-valores muestran valores muy inferiores a 0.05, rechazando en todos los casos la hipótesis nula sobre la normamlidad de los datos.
 
 ```{r}
-
 lapply(booking_norm, shapiro.test)
-
 ```
 
 A fin de aproximar más los datos a una distribución normal, se propone hacer una transformación de box-cox y comprobar si los datos efectivamente se aproximan más a una normal. Tras llevar a cabo este proceso, si bien los histogramas muestran en algunos casos una distribución "visualmente más normales" y los QQ-plots parecen mostrar que la transformación ha aliviado ligeramente el problema con las colas, los resultados de la transformación no han sido suficientes como para poder considerar que los datos se distribuyen como una normal. No obstante, no debemos preocuparnos demasiado por este problema, pues tenemos suficientes registros como para poder apoyarnos en el Teorema del Límite Central. Por ejemplo, el t-test asume que las medias de las diferentes muestras se distribuyen normalmente (siendo una muestra de más de 30 registros suficiente, como rule of thumb, para que el t-test sea válido aunque los datos no se distribuyan normalmente).
 
 ```{r}
-
 par(mfrow=c(2,3))
 for(i in 1:ncol(booking_norm)){
   b <- boxcox(lm(booking_norm[,i] ~ 1))
@@ -932,55 +894,65 @@ for(i in 1:ncol(booking_norm)){
   qqline((booking_norm[,i]^lambda - 1)/lambda, col = "red")
   hist((booking_norm[,i]^lambda - 1)/lambda, main = paste("Histograma de", colnames(booking_norm)[i]), xlab=colnames(booking_norm)[i], freq = FALSE)
 }
-
 ```
 
-Seguidamente, analizaremos la homocedasticidad mediante boxplots y varios test de homocedasticidad, o de homogeneidad de varianzas. En este caso, no podemos utilizar el test de Levene ni el de Barlett ya que son muy sensibles ante datos no normales y, como acabamos de presentar, los datos analizados no se aproximan en ningún caso a una normal.
-
-
-PARA VER A QUÉ VARIABLES HAGO EL TEST TENGO QUE VER QUE TEST APLICAS EN LA SIGUIENTE PARTE GERARD.
+Seguidamente, analizaremos la homocedasticidad mediante scatterplots y varios test de homocedasticidad, o de homogeneidad de varianzas. En este caso, no podemos utilizar el test de Levene ni el de Barlett ya que son muy sensibles ante datos no normales y, como acabamos de presentar, los datos analizados no se aproximan en ningún caso a una normal.
 
 
 ```{r}
+ggplot(booking, aes(x = max_price, y = page_count, color = air_conditioning)) + 
+  geom_point() +
+  facet_grid(air_conditioning~.)
+```
 
-ggplot(booking, aes(x = page_count, y = min_price, color = city)) + 
-  geom_point()
-  
+Como todos los test de homogeneidad de varianzas, nos basamos en las siguientes hipótesis:
 
+$$H_0: \sigma_{i}^2 = \dots = \sigma_{j}^2$$
+$$H_0: \sigma_{i}^2 \neq  \sigma_{j}^2 \textrm{ para al menos un conjunto (i,j)}$$
+
+Donde rechazaremos la hipótesis nula cuando el pvalor del test sea inferior a un nivel de significación igual a 0.05.
+
+```{r}
+fligner.test(page_count ~ air_conditioning, data = booking)
 ```
 
 ```{r}
-
-fligner.test(min_price ~ city, data = booking)
-
+ggplot(booking, aes(x = max_price, y = page_count, color = free_wifi)) + 
+  geom_point()+
+  facet_grid(free_wifi~.)
 ```
 
 ```{r}
-
-ggplot(booking, aes(x = page_count, y = min_price, color = month)) + 
-  geom_point()
-
+fligner.test(page_count ~ free_wifi, data = booking)
 ```
 
 ```{r}
+booking <- booking %>%
+  mutate(high_hotel_score = ifelse(hotel_score >= 9, 1, 0))
 
-fligner.test(max_price ~ month, data = booking)
-
+ggplot(booking, aes(x = max_price, y = page_count, color = high_hotel_score)) + 
+  geom_point()+
+  facet_grid(high_hotel_score~.)
 ```
 
 ```{r}
-
-booking$current_page <- as.factor(booking$current_page)
-ggplot(booking, aes(x = page_count, y = min_price, color = current_page)) + 
-  geom_point()
-
+fligner.test(page_count ~ high_hotel_score, data = booking)
 ```
 
 ```{r}
+booking <- booking %>%
+  mutate(high_max_price = ifelse(max_price >= mean(max_price), 1, 0))
 
-fligner.test(min_price ~ current_page, data = booking)
-
+ggplot(booking, aes(x = min_price, y = page_count, color = high_max_price)) + 
+  geom_point()+
+  facet_grid(high_max_price~.)
 ```
+
+```{r}
+fligner.test(page_count ~ high_max_price, data = booking)
+```
+
+Tras realizar test a un gran número de variables de interés (principalmente las que van a ser sujeto de estudio para los tests estadísticos), se ha determinado que existe homogeneidad de varianzas, por lo que no nos encontraremos con problemas de heterogeneidad a la hora de realizar pruebas de hipótesis.
 
 #### 4.3 Aplicación de pruebas estadísticas para comparar los grupos de datos
 En este apartado se aplicarán distintas pruebas estadísticas para comparar los distintos grupos de datos de los que disponemos y ver cual es su relación con la variable objetivo. Esto nos permitirá evaluar que variables tienen un impacto significativo sobre la variable objetivo y cuales no.
