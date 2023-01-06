@@ -973,11 +973,11 @@ Las hipótesis que trataremos de verificar serán las siguientes:
 A continuación se estudiará cada una de estas hipótesis y el resultado obtenido.
 
 **Hipótesis 1**
-La primera hipótesis evalúa la influencia del wifi en el posicionamiento del hotel, suponiendo que un hotel con wifi gratuito tendrá un posicionamiento mejor, es decir menor **page_count** que un hotel que no disponga de wifi gratuito. A continuación se plantea la hipótesis nula ($H_{0}$) y la alternativa ($H_{1}$).
+La primera hipótesis evalúa la influencia de que un hotel disponga de aire acondicionado en el posicionamiento del hotel, suponiendo que un hotel con aire acondicionado tendrá un posicionamiento mejor, es decir menor **page_count** que un hotel que no disponga de aire acondicionado. A continuación se plantea la hipótesis nula ($H_{0}$) y la alternativa ($H_{1}$).
 
 
-* $H_{0}:$ La posición global de un hotel con wifi gratuito y uno sin serán iguales.
-* $H_{1}:$ La posición global de un hotel con wifi gratuito será mejor (inferior) a la de uno sin.
+* $H_{0}:$ La posición global de un hotel con aire acondicionado y uno sin serán iguales.
+* $H_{1}:$ La posición global de un hotel con aire acondicionado será mejor (inferior) a la de uno sin.
 
 O en otras palabras:
 
@@ -1180,7 +1180,68 @@ En este caso se ha obtenido un p-value de 0.99, por lo que se acepta la hipótes
 #### 4.4 Aplicación de funciones lineales para resolución del problema
 Una vez analizados los distintos contrastes de hipótesis y hayada la correlación entre las distintas variables, tenemos un conocimiento del conjunto de datos lo suficientemente extenso como para analizar mediante una función lineal el posicionamiento de un hotel en el buscador de Booking.
 
+Tras los resultados que se han obtenido observamos que hay distintas variables que pueden tener una mayor influencia sobre nuestra variable objetivo. Por un lado, si nos basamos en lo obtenido tras el análisis de correlación hayamos que variables como **min_price**, **comfort_score**, **cleanliness_score**, **safe** o **hotel_score** entre otros tienen una gran relevancia. Por otro lado, variables como **air_conditioning** o **has_free_cancelation** han mostrado una relevancia significativa durante el contraste de hipótesis. 
 
+En este apartado comenzaremos tratando de ajustar una regresión lineal simple aproximando la variable dependiente **page_count** con la variable explicativa que ha proporcionado una mayor correlación, que ha resultado ser **comfort_score**.
+
+```{r}
+#Create the linear model
+mrl <- lm(page_count~comfort_score, data=booking)
+
+#Evaluate the data
+summary(mrl)
+```
+
+Obtenemos un valor de R-squared de 0.005, lo que es un valor muy bajo y representa una aproximación muy mala de la variable dependiente.
+
+Con el objetivo de mejorar los resultados obtenidos se realizará una regresión lineal múltiple que consideré todas las puntuaciones del hotel para predecir la posición de este. Para ello empleamos las variables: **hotel_score**, **staff_score**, **facilities_score**, **cleanliness_score**, **comfort_score**, **value_for_money_score**, **location_score** y **free_wifi_score**, para ver como la opinión de los clientes afecta en el posicionamiento de este en Booking.
+
+```{r}
+#Create the linear model
+mrl_scores <- lm(page_count~hotel_score + staff_score + facilities_score + cleanliness_score + comfort_score + value_for_money_score + location_score + free_wifi_score, data=booking)
+
+#Evaluate the data
+summary(mrl_scores)
+```
+
+Se observa que con la regresión lineal multiple R-squared aumenta hasta 0.02, unas 4 veces mejor que empleando solo una variable, pero aún así los resultados obtenidos son muy malos y no aproximan de una forma correcta la variable dependiente.
+
+De este primer análisis observamos que de todas las variables empleadas, las que han tenido una mayor influencia sobre la variable dependiente han sido **staff_score**, **value_for_money_score**, **location_store** y **free_wifi_score**. A continuación generamos una regresión lineal múltiple empleando tan solo estas variables.
+
+
+```{r}
+#Create the linear model
+mrl_scores <- lm(page_count~staff_score + value_for_money_score + location_score + free_wifi_score, data=booking)
+
+#Evaluate the data
+summary(mrl_scores)
+```
+
+Observamos que habiendo empleado tan solo 4 variables, de las 8 empleadas previamente, el R-squared tan solo se ha visto reducido en 0.0015.
+
+A continuación, mantendremos estas variables que han mostrado los mejores resultados y añadiremos las que habíamos hayado que tenían una mayor correlación con la variable dependiente.
+
+```{r}
+#Create the linear model
+mrl_complete <- lm(page_count~staff_score + value_for_money_score + location_score + free_wifi_score + min_price + balcony + pet_friendly + air_conditioning + private_bathroom + free_wifi + swimming_pool + non_smoking_rooms + mean_flights + length_description + safe, data=booking)
+
+#Evaluate the data
+summary(mrl_complete)
+```
+
+Con todas las variables la R-squared ha aumentado hasta 0.057, que sigue siendo un resultado muy bajo, pero dificil de mejorar con unos datos tan poco correlacionados con la variable objetivo.
+
+De todas las variables empleadas se observa que las que tienen una mayor influencia son: **staff_score**, **value_for_money_score**, **free_wifi_score**, **balcony**, **pet_friendly**, **air_conditioning**, **swimming_pool**, **mean_flights** y **length_description**. A continuación se aproxima la variable dependiente basándonos exclusivamente en estas variables.
+
+```{r}
+#Create the linear model
+mrl_final <- lm(page_count~staff_score + value_for_money_score + free_wifi_score + balcony + pet_friendly + air_conditioning + swimming_pool + mean_flights + length_description, data=booking)
+
+#Evaluate the data
+summary(mrl_final)
+```
+
+De esta forma hemos conseguido mantener una R-squared similar a la obtenida previamente, pero empleando exclusivamente 9 variables en lugar de las más de 40 variables iniciales.
 
 ## 5. REPRESENTACIÓN DE LOS RESULTADOS
 
