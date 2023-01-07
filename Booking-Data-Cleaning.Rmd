@@ -1243,6 +1243,31 @@ summary(mrl_final)
 
 De esta forma hemos conseguido mantener una R-squared similar a la obtenida previamente, pero empleando exclusivamente 9 variables en lugar de las más de 40 variables iniciales.
 
+
+Anteriormente se ha observado una correlación entre el precio de la habitación y sus características, en concreto había una correlación con el precio máximo de esta. A continuación, se tratará de predecir el precio máximo de la habitación mediante una regresión lineal múltiple empleando el resto de variables para ello:
+
+```{r}
+#Create the linear model
+mrl_price <- lm(max_price~staff_score + value_for_money_score + location_score + free_wifi_score + balcony + pet_friendly + air_conditioning + private_bathroom + free_wifi + swimming_pool + non_smoking_rooms + mean_flights + length_description + safe, data=booking)
+
+#Evaluate the data
+summary(mrl_price)
+```
+
+Con ello obtenemos una R-squared de 0.2125, con lo que podemos observar que variables que tienen una mayor correlación con la variable objetivo nos proporcionarán unos resultados más apropiados. A portir de los resultados mostrados podemos mejorar la regresión empleando tan solo aquellas variables que han aportado más información en la regresión como han sido: **staff_score**, **location_score**, **balcony**, **air_conditioning**, **free_wifi**, **swimming_pool**, **non_smoking_rooms**, **mean_flights**, **length_description** y **safe**.
+
+A continuación se emplea una regresión lineal múltiple tan solo con estas variables.
+
+```{r}
+#Create the linear model
+mrl_price <- lm(max_price~staff_score + location_score + balcony + air_conditioning + free_wifi + swimming_pool + non_smoking_rooms + mean_flights + length_description + safe, data=booking)
+
+#Evaluate the data
+summary(mrl_price)
+```
+
+Se observa que aun habiendo reducido el número de variables, mantenemos una R-squares ligeramente superior 0.21. Hay que tener en cuenta que los resultados siguen sin ser satisfactorios, ya que una R-squared de 0.21 es bastante baja, no obstante es mucho mejor que lo obtenido tratando de predecir la variable page_count. Esta mala predicción es producida como se había comentado previamente debido a la baja correlación de las variables con la variable objetivo.
+
 ## 5. REPRESENTACIÓN DE LOS RESULTADOS
 
 A lo largo del documento se han presentado representaciones gráficas de los análisis realizados y de los resultados obtenidos.
