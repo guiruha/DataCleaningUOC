@@ -958,14 +958,14 @@ Tras realizar test a un gran número de variables de interés (principalmente la
 En este apartado se aplicarán distintas pruebas estadísticas para comparar los distintos grupos de datos de los que disponemos y ver cual es su relación con la variable objetivo. Esto nos permitirá evaluar que variables tienen un impacto significativo sobre la variable objetivo y cuales no.
 Nuestra variable objetivo es la posición en la página (page_count) y relacionada directamente la página en la que aparece (current_page), por lo que las distintas hipótesis que se plantean están asociadas con la influencia de distintas variables sobre el posicinamiento de un hotel en Booking. A continuación se recogen unas hipótesis, aunque sería posible evaluar otras, que también pareciesen interesantes, dado el carácter académico de este trabajo nos centraremos exclusivamente en estudiar la influencia de las variables:
 
-* **free_wifi**
+* **air_conditioning**
 * **has_free_cancelation**
 * **hotel_score**
 * **min_price**
 
 Las hipótesis que trataremos de verificar serán las siguientes:
 
-* Aquellos hoteles con wifi tendrán una mejor posición (page_count inferior) a los que no dispongan de wifi
+* Aquellos hoteles con aire acondicionado tendrán una mejor posición (page_count inferior) a los que no dispongan de este.
 * Los hoteles con cancelación gratuita tendrán una posición diferente a los que no dispongan de esta.
 * Los hoteles con una puntuación global superior a un 9 tendrán un mejor posicionamiento.
 * Los hoteles con un precio mínimo inferior a la media tendrán un mejor posicionamiento.
@@ -1021,7 +1021,7 @@ print(paste("The mean of the group 1 is: ", mean(X1)))
 print(paste("The mean of the group 2 is: ", mean(X2)))
 ```
 
-Se obtiene un p-value muy cercano a 0, y muy inferior a 0.05, por lo que podemos rechazar la hipótesis nula y considerar que **la presencia de aire acondicionado en una hotel mejorará el posicionamiento de este en el buscador de Booking**. Esto se observa también al obtener una media de posicionamiento inferior en más de 9 posiciones en aquellos hoteles con aire acondicionado.
+Se obtiene un p-value muy cercano a 0, y muy inferior a 0.05, por lo que podemos rechazar la hipótesis nula y considerar que **la presencia de aire acondicionado en un hotel mejorará el posicionamiento de este en el buscador de Booking**. Esto se observa también al obtener una media de posicionamiento inferior en más de 9 posiciones en aquellos hoteles con aire acondicionado.
 
 **Hipótesis 2**
 Esta segunda hipótesis trata de evaluar la influencia de la cancelación gratuita, la cual para aportar una mayor diversidad en los análisis realizados, puede estar asociada a una posición distinta (inferior o superior) que la de un hotel sin cancelación gratuita. Definimos esta hipótesis mediante las hipótesis nula ($H_{0}$) y alternativa ($H_{1}$) siguientes:
@@ -1086,7 +1086,7 @@ O en otras palabras:
 * $H_{0}: \mu_0 = \mu_1$
 * $H_{1}: \mu_0 \le \mu_1$
 
-En este caso se trata de un **contraste de hipótesis de dos muestras independientes sobre la media con varianzas conococidas**. Al igual que en los casos anteriores podemos asumir la normalidad de los datos por el TLC. En este caso se aplicará un **test bilateral por la izquierda**.
+En este caso se trata de un **contraste de hipótesis de dos muestras independientes sobre la media con varianzas conocidas**. Al igual que en los casos anteriores podemos asumir la normalidad de los datos por el TLC. En este caso se aplicará un **test bilateral por la izquierda**.
 
 ```{r}
 # Buscamos el conjunto de datos de estudio:
@@ -1138,7 +1138,7 @@ O en otras palabras:
 * $H_{0}: \mu_0 = \mu_1$
 * $H_{1}: \mu_0 \le \mu_1$
 
-En este caso también realizaremos un **contraste de hipótesis de dos muestras independientes sobre la media con varianzas conococidas**. Como se ha visto en los casos anteriores, por el TLC podemos asumir la normalidad de los datos y aplicaremos un test paramétrico, en este caso emplearemos un **test unilateral por la izquierda**.
+En este caso también realizaremos un **contraste de hipótesis de dos muestras independientes sobre la media con varianzas conocidas**. Como se ha visto en los casos anteriores, por el TLC podemos asumir la normalidad de los datos y aplicaremos un test paramétrico, en este caso emplearemos un **test unilateral por la izquierda**.
 
 ```{r}
 # Buscamos el conjunto de datos de estudio:
@@ -1186,7 +1186,7 @@ En este apartado comenzaremos tratando de ajustar una regresión lineal simple a
 
 ```{r}
 #Create the linear model
-mrl <- lm(page_count~comfort_score, data=booking)
+mrl <- lm(page_count~C, data=booking)
 
 #Evaluate the data
 summary(mrl)
@@ -1219,7 +1219,7 @@ summary(mrl_scores)
 
 Observamos que habiendo empleado tan solo 4 variables, de las 8 empleadas previamente, el R-squared tan solo se ha visto reducido en 0.0015.
 
-A continuación, mantendremos estas variables que han mostrado los mejores resultados y añadiremos las que habíamos hayado que tenían una mayor correlación con la variable dependiente.
+A continuación, mantendremos estas variables que han mostrado los mejores resultados y añadiremos las que habíamos hallado que tenían una mayor correlación con la variable dependiente.
 
 ```{r}
 #Create the linear model
