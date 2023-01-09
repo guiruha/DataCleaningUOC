@@ -626,8 +626,7 @@ ggplot(booking, aes(y = length_description, color = city))+
 boxplot.stats(booking$length_description)$out
 ```
 
-
-Observamos que las descripciones tienen una longitud muy similar en las 3 ciudades en torno a las 120-170 palabras, presentando algún outlier por la parte superior, pero siempre con descripciones inferiores a las 400 palabras. Aunque corresponda a una descripción un poco extensa, no parece que corresponda a un outlier sino simplemente a una descripción más extensa de lo habitual.
+Observamos que las descripciones tienen una longitud muy similar en las 3 ciudades en torno a las 120-170 palabras, presentando algún outlier por la parte superior, pero siempre con descripciones inferiores a las 400 palabras. Aunque corresponda a una descripción un poco extensa, no parece que corresponda a un error sino simplemente a una descripción más extensa de lo habitual.
 
 A continuación evaluaremos el precio mínimo de las habitaciones del hotel.
 
@@ -642,8 +641,6 @@ boxplot.stats(booking$min_price)$out
 
 Observamos que el precio mínimo tiene una gran disparidad oscilando de promedio entre los 100€ y los 500€, siendo Valencia la ciudad con el menor rango intercuartil con presencia de outliers en el rango superior de precios, con alguna habitación con precios cercanos a los 1000€, que aunque puedan parecer caros, son razonables en algún hotel de lujo de la ciudad.
 
-A continuación se evalúan los precios máximos.
-
 ```{r}
 # Graficamos box-plot con ggplot
 ggplot(booking, aes(y = max_price, color = city))+
@@ -653,14 +650,14 @@ ggplot(booking, aes(y = max_price, color = city))+
 boxplot.stats(booking$max_price)$out
 ```
 
-Observamos unos precios promedio mucho más elevados con un mayor rango intercuartil en la ciudad de Valencia, lo que sorprende al ser lo contrario que con los precios mínimos. También se observa que los outliers en este caso aparecen por el lado inferior especialmente en la ciudad de Madrid, aunque con precios positivos, que podrían corresponder a hoteles muy económicos o albergues.
+A continuación se evalúan los precios máximos. Observamos unos precios promedio mucho más elevados con un mayor rango intercuartílico en la ciudad de Valencia, lo que sorprende al ser lo contrario que con los precios mínimos. También se observa que los outliers en este caso aparecen por el lado inferior especialmente en la ciudad de Madrid, aunque con precios positivos, que podrían corresponder a hoteles muy económicos o albergues.
 
 Por otro lado sorprende ver que los precios máximos no superan el valor máximo observado en el precio mínimo, lo que se puede atribuir a que aquellos hoteles con precios muy elevados no ofrecían una variedad de habitaciones y precios.
 
 
 ## 3. INTEGRACIÓN Y SELECCIÓN
 
-La sección de integración y selección la encontramos tras la de limpieza, pues muchas de las columnas que queriamos descartar han sido tratadas en la fase de limpieza para extraer información de utilidad. Hecho esto, en la presente sección procedemos a eliminar todas las columnas del dataset origial que ya no vamos a necesitar para los siguientes apartados.
+La sección de integración y selección la encontramos tras la de limpieza, pues muchas de las columnas que queriamos descartar han sido tratadas en la fase de limpieza para extraer información de utilidad. Hecho esto, en la presente sección procedemos a eliminar todas las columnas del dataset original que ya no vamos a necesitar para los siguientes apartados.
 
 ```{r}
 # Seleccionamos con la función "select" de dplyr todas las columnas excepto las que ya hemos limpiado para crear otras, además de aquellasque nos van a ser de poca utilidad.
@@ -718,11 +715,11 @@ write.csv(booking, "../data/hotel_data_processed.csv")
 
 ## 4. ANÁLISIS DE LOS DATOS
 
-A continuación, se evaluará la influencia de las distintas variables sobre la posición de un hotel en el buscador y sobre el precio que este fija para sus habitaciones. Para ello se empleará una matriz de correlaciones (de Spearman, dado que no asumimos normalidad). Una vez obtenidas las variables con mayor correlación con la variable objetivo generaremos una selección de los atributos a analizar, un grupo de variables distinto por cada problema a tratar.
+A continuación, se evaluará la influencia de las distintas variables sobre la posición de un hotel en el buscador y sobre el precio que este fija para sus habitaciones. Para ello se empleará una matriz de correlaciones. Una vez obtenidas las variables con mayor correlación con la variable objetivo generaremos una selección de los atributos a analizar, un grupo de variables distinto por cada problema a tratar.
 
 Tras generar los distintos grupos procederemos a evaluar la normalidad y la homogeneidad de la varianza para así poder determinar en el siguiente punto que pruebas estadísticas se pueden aplicar.
 
-Finalmente aplicaremos distintos tests estadísticos adicionales a la correlación hallada inicialmente. Estas pruebas estadísticas incluirán contrastes de hipótesis y regresiones lineales (enfocados dese un punto de vista inferencial, no predictivo).
+Finalmente aplicaremos distintos tests estadísticos adicionales a la correlación hallada inicialmente. Estas pruebas estadísticas incluirán contrastes de hipótesis y regresiones lineales (enfocados desde un punto de vista inferencial, no predictivo).
 
 
 #### 4.1 Correlación con la variable objetivo y selección de los grupos de datos que se quieren analizar
@@ -746,8 +743,6 @@ booking_numeric <- booking %>%
 mattmp <- booking_numeric %>%
   dplyr::select(c("adults", "children", "num_rooms", "postal_code", "latitude", "longitude", "hotel_score", "length_description", 
            "is_suite", "is_apartment", "has_free_cancelation", "min_price","max_price", "current_page", "in_page_count", "page_count"))
-
-sapply(mattmp, function(y) sum(is.na(y)))
 
 # Creamos una matriz de correlación del dataset
 cor_mat <- cor(mattmp, method = "spearman")
@@ -783,7 +778,7 @@ plot.window(xlim=c(-2,2), ylim=c(5,10))
 corrplot(cor_mat, method="color", type = "lower", tl.col = "black", tl.srt = 45, diag = FALSE, tl.cex = 0.55, addCoef.col = 'black', number.cex = 0.5)
 ```
 
-Como bien se puede observar en las matrices, las variables que recogen las distintas puntuaciones están correlacionadas entre ellas, por lo que un hotel que haya obtenido una puntuación elevada en un aspecto generalmente también lo obtendrá en el resto. Este factor es de especial interés si se seleccionan varias columnas de este tipo, pues corremos el riesgo de sufrir un problema de multicolinealidad. También encontramos que los hoteles con distintos atributos como aire acondicionado o baño privado suelen tener el resto de servicios adicionales, aunque este factor puede deberse a que es más habitual encontrar este tipo de elementos en una habitación de hotel, por lo que es común que cuando exista una habitación con calefacción, por ejemplo, también tenga aire acondicionado o baños privado. Por último, aunque es evidente, cabe destacar que las mayores colinealidades las tenemos con variables directamente relacionadas o que presentan información de la misma fuente (current_page con page_count o max_price con min_price). No obstante, esto no es un problema, pues eliminaremos estas variables del conjunto de entrenamiento para no incurrir en “data leakage”.
+Como bien se puede observar en las matrices, las variables que recogen las distintas puntuaciones están correlacionadas entre ellas, por lo que un hotel que haya obtenido una puntuación elevada en un aspecto generalmente también lo obtendrá en el resto. Este factor es de especial interés si se seleccionan varias columnas de este tipo, pues corremos el riesgo de sufrir un problema de multicolinealidad. También encontramos que los hoteles con distintos atributos como aire acondicionado o baño privado suelen tener el resto de servicios adicionales, aunque este factor puede deberse a que es más habitual encontrar este tipo de elementos en una habitación de hotel, por lo que es común que cuando exista una habitación con calefacción, por ejemplo, también tenga aire acondicionado o baño privado. Por último, aunque es evidente, cabe destacar que las mayores colinealidades las tenemos con variables directamente relacionadas o que presentan información de la misma fuente (current_page con page_count o max_price con min_price). No obstante, esto no es un problema, pues eliminaremos estas variables del conjunto de entrenamiento para no incurrir en “data leakage”.
 
 ```{r}
 # Filtramos para obtener cuales son las variables más correlacionadas con nuestra variable objetivo, current_page
@@ -797,13 +792,6 @@ cor_mat_df %>%
 ```
 
 Cuando evaluamos la posición en la página web observamos que no hay una correlación elevada con ninguna variable, encontrando valores por debajo de 0.12 (en valor absoluto) para todos los casos. No obstante, para el caso de page_count, hemos optado por someter a estudio aquellas variables que presentan mayor correlación de spearman con la variable dependiente (pues evaluando con distintas métricas que buscan determinar el nivel de dependencia no-lineal hemos obtenido resultados similares). Las variables seleccionadas en cuestión son: kitchen, is_apartment, adults, air_conditioning, elevator, private_bathroom, num_rooms, value_for_money_score, heating, free_wifi, non_smoking_rooms, comfort_score, hotel_score, longitude, facilities_score pet_friendly, mientras que la variable dependiente será page_count.
-
-```{r}
-booking_pcount <- booking_numeric %>%
-  dplyr::select(c("kitchen", "is_apartment", "adults", "air_conditioning", "elevator", "private_bathroom",
-           "num_rooms", "value_for_money_score", "heating", "non_smoking_rooms", "comfort_score", "hotel_score",
-           "longitude", "has_free_cancelation", "page_count"))
-```
 
 En el caso del problema a resolver relacionado con el precio, al analizar las correlaciones sí que encontramos valores entre 0.15 y 0.20. Aunque estas correlaciones no sean muy elevadas nos ofrecen un escenario más prometedor que el anteriormente presentado. A continuación, procedemos a seguir con el mismo procedimiento que con page_count, esta vez seleccionando las siguientes variables:
 
@@ -835,11 +823,16 @@ cor_mat_df %>%
   filter(max_price < 0.95) %>%
   arrange(max_price) %>%
   dplyr::select(max_price)
+```
 
-booking_price <- booking_numeric %>%
-  dplyr::select(c("postal_code", "balcony", "pet_friendly", "latitude", "air_conditioning", "private_bathroom", "free_wifi", "staff_score",
-                  "swimming_pool", "location_score", "non_smoking_rooms", "mean_flights", "length_description", "facilities_score", "hotel_score",
-                  "safe", "cleanliness_score", "comfort_score", "max_price"))
+A modo ilustrativo podemos graficar un scatter plot para visualizar la variable que más parece estar relacionada con el precio, el comfort_score.
+
+```{r}
+
+ggplot(booking_price, aes(comfort_score, max_price)) +
+  geom_point(color = "navy") +
+  geom_smooth(method = "lm", color = "red")
+
 ```
 
 #### 4.2 Comprobación de la normalidad y homogeneidad de la varianza
@@ -847,12 +840,13 @@ booking_price <- booking_numeric %>%
 Para comprobar si los valores de las variables de nuestro dataset se distribuyen o se aproximan a una población distribuida normalmente haremos un análisis visual, con QQ-Plots y Histogramas, y un análisis mediante el test Shapiro-Wilk. Concretamente solo comprobaremos la normalidad para las variables seleccionadas en el apartado anterior.
 
 ```{r}
-
+# Seleccionamos las variables a analizar
 norm_cols <- c("value_for_money_score", "comfort_score", "hotel_score", "staff_score", "cleanliness_score", "location_score", "facilities_score", "length_description", "min_price", "max_price", "page_count")
 
 booking_norm <- booking_numeric %>%
   dplyr::select(norm_cols)
 
+# Ploteamos los qq-plots y los histogramas
 par(mfrow=c(2,2))
 for(i in 1:ncol(booking_norm)){
   qqnorm(booking_norm[,i], main = paste("QQ-Plot de",colnames(booking_norm)[i]), col = "navy")
@@ -861,15 +855,19 @@ for(i in 1:ncol(booking_norm)){
 }
 ```
 
-Los QQ-plots y los histogramas nos muestran una distribuciones con una evidente asimetría negativa en la mayoría de los casos (excepto variables como length_description que muestran una asimetría más bien positiva, aunque podría ser influencia de un dato extremo que no ha sido considerado outlier), así como un evidente problema con las colas, pues en la mayoría de los casos los puntos se alejan de la línea roja, la cual corresponde a la hipotética distribución normal. Por tanto, a priori podríamos rechazar la hipótesis de normalidad de las variables. No obstante, tras ejecutar el test Shapiro-Wilk confirmamos de forma más fiable nuestras primeras conclusiones, pues todos los p-valores muestran valores muy inferiores a 0.05, rechazando en todos los casos la hipótesis nula sobre la normamlidad de los datos.
+Los QQ-plots y los histogramas nos muestran una distribuciones con una evidente asimetría negativa en la mayoría de los casos (excepto variables como length_description que muestran una asimetría más bien positiva, aunque podría ser influencia de un dato extremo que no ha sido considerado outlier), así como un evidente problema con las colas, pues en la mayoría de los casos los puntos se alejan de la línea roja, la cual corresponde a la hipotética distribución normal. Por tanto, a priori podríamos rechazar la hipótesis de normalidad de las variables. Es más, tras ejecutar el test Shapiro-Wilk confirmamos de forma más fiable nuestras primeras conclusiones, pues todos los p-valores muestran valores muy inferiores a 0.05, rechazando en todos los casos la hipótesis nula sobre la normalidad de los datos.
 
 ```{r}
-lapply(booking_norm, shapiro.test)
+# Calculamos el test de Shapiro-Wilk para cada variable y sacamos su pvalor
+pvalues <- t(data.frame(lapply(booking_norm, function(y) format(shapiro.test(y)$p.value, digits = 3))))
+
+kable(pvalues, col.names = c("p-value"))
 ```
 
 A fin de aproximar más los datos a una distribución normal, se propone hacer una transformación de box-cox y comprobar si los datos efectivamente se aproximan más a una normal. Tras llevar a cabo este proceso, si bien los histogramas muestran en algunos casos una distribución "visualmente más normales" y los QQ-plots parecen mostrar que la transformación ha aliviado ligeramente el problema con las colas, los resultados de la transformación no han sido suficientes como para poder considerar que los datos se distribuyen como una normal. No obstante, no debemos preocuparnos demasiado por este problema, pues tenemos suficientes registros como para poder apoyarnos en el Teorema del Límite Central. Por ejemplo, el t-test asume que las medias de las diferentes muestras se distribuyen normalmente (siendo una muestra de más de 30 registros suficiente, como rule of thumb, para que el t-test sea válido aunque los datos no se distribuyan normalmente).
 
 ```{r}
+# Ploteamos los qq-plots y los histogramas
 par(mfrow=c(2,3))
 for(i in 1:ncol(booking_norm)){
   b <- boxcox(lm(booking_norm[,i] ~ 1))
@@ -880,10 +878,11 @@ for(i in 1:ncol(booking_norm)){
 }
 ```
 
-Seguidamente, analizaremos la homocedasticidad mediante scatterplots y varios test de homocedasticidad, o de homogeneidad de varianzas. En este caso, no podemos utilizar el test de Levene ni el de Barlett ya que son muy sensibles ante datos no normales y, como acabamos de presentar, los datos analizados no se aproximan en ningún caso a una normal.
+Seguidamente, analizaremos la homocedasticidad mediante scatterplots y varios test de homocedasticidad, o de homogeneidad de varianzas. En este caso, no podemos utilizar el test de Barlett ya que es muy sensible ante datos no normales y, como acabamos de presentar, los datos analizados no se aproximan en ningún caso a una normal. Por tanto, en este caso haremos uso del test de Fligner-Killeen.
 
 
 ```{r}
+# Generamos el scatter para compromar la homocedasticidad de page_count cuando dividimos por air_conditioning.
 ggplot(booking, aes(x = max_price, y = page_count, color = air_conditioning)) + 
   geom_point() +
   facet_grid(air_conditioning~.)
@@ -897,50 +896,59 @@ $$H_0: \sigma_{i}^2 \neq  \sigma_{j}^2 \textrm{ para al menos un conjunto (i,j)}
 Donde rechazaremos la hipótesis nula cuando el pvalor del test sea inferior a un nivel de significación igual a 0.05.
 
 ```{r}
+# Ajustamos el test de fligner-killeen para page_count y air_conditioning
 fligner.test(page_count ~ air_conditioning, data = booking)
 ```
 
 ```{r}
+# Generamos el scatter para compromar la homocedasticidad de page_count cuando dividimos por free_wifi.
 ggplot(booking, aes(x = max_price, y = page_count, color = free_wifi)) + 
   geom_point()+
   facet_grid(free_wifi~.)
 ```
 
 ```{r}
+# Ajustamos el test de fligner-killeen para page_count y free_wifi
 fligner.test(page_count ~ free_wifi, data = booking)
 ```
 
 ```{r}
+# Generamos la variable para el contraste que realizaremos en la siguiente sección. Si el hotel score es mayor a 9 se marca con una flag
 booking <- booking %>%
   mutate(high_hotel_score = ifelse(hotel_score >= 9, 1, 0))
 
+# Ploteamos el scatter para comprobar la homocedasticidad de page_count cuando dividimos por la nueva variable.
 ggplot(booking, aes(x = max_price, y = page_count, color = high_hotel_score)) + 
   geom_point()+
   facet_grid(high_hotel_score~.)
 ```
 
 ```{r}
+# Ajustamos el test de fligner-killeen para page_count y la nueva variable
 fligner.test(page_count ~ high_hotel_score, data = booking)
 ```
 
 ```{r}
+# Generamos la variable para el contraste que realizaremos en la siguiente sección. Si el precio máximo supera la media de precios maximos
+# pone un flags
 booking <- booking %>%
   mutate(high_max_price = ifelse(max_price >= mean(max_price), 1, 0))
 
+# Ploteamos el scatter para comprobar la homocedasticidad de page_count cuando dividimos por la nueva variable.
 ggplot(booking, aes(x = min_price, y = page_count, color = high_max_price)) + 
   geom_point()+
   facet_grid(high_max_price~.)
 ```
 
 ```{r}
+# Ajustamos el test de fligner-killeen para page_count y la nueva variable
 fligner.test(page_count ~ high_max_price, data = booking)
 ```
 
-Tras realizar test a un gran número de variables de interés (principalmente las que van a ser sujeto de estudio para los tests estadísticos), se ha determinado que existe homogeneidad de varianzas, por lo que no nos encontraremos con problemas de heterogeneidad a la hora de realizar pruebas de hipótesis.
+Tras realizar test a un gran número de variables de interés (principalmente las que van a ser sujeto de estudio para los tests estadísticos, es decir, air_conditioning, free_wifi y dos variables nuevas que hemos creado, high_hotel_score y high_max_price), se ha determinado que existe homogeneidad de varianzas, por lo que no nos encontraremos con problemas de heterogeneidad a la hora de realizar pruebas de hipótesis.
 
 #### 4.3 Aplicación de pruebas estadísticas para comparar los grupos de datos
-En este apartado se aplicarán distintas pruebas estadísticas para comparar los distintos grupos de datos de los que disponemos y ver cual es su relación con la variable objetivo. Esto nos permitirá evaluar que variables tienen un impacto significativo sobre la variable objetivo y cuales no.
-Nuestra variable objetivo es la posición en la página (page_count) y relacionada directamente la página en la que aparece (current_page), por lo que las distintas hipótesis que se plantean están asociadas con la influencia de distintas variables sobre el posicinamiento de un hotel en Booking. A continuación se recogen unas hipótesis, aunque sería posible evaluar otras, que también pareciesen interesantes, dado el carácter académico de este trabajo nos centraremos exclusivamente en estudiar la influencia de las variables:
+En este apartado se aplicarán distintas pruebas estadísticas para comparar los distintos grupos de datos de los que disponemos y ver cual es su relación con la variable objetivo page_count. Esto nos permitirá evaluar que variables tienen un impacto significativo sobre la variable objetivo y cuales no. A continuación, se recogen unas pocas hipótesis, aunque sería posible evaluar otras que también pareciesen interesantes, dado el carácter académico de este trabajo nos centraremos exclusivamente en estudiar la influencia de las variables:
 
 * **air_conditioning**
 * **has_free_cancelation**
@@ -968,7 +976,9 @@ O en otras palabras:
 * $H_{0}: \mu_0 = \mu_1$
 * $H_{1}: \mu_0 \le \mu_1$
 
-En este caso se trata de un **contraste de hipótesis de dos muestras independientes sobre la media con varianzas conocidas**. Aunque previamente no se ha cumplido la normalidad de los datos por el Teorema del Límite Central podemos considerar la normalidad de los datos y aplicar un test paramétrico. En este caso aplicaremos un **test unilateral por la izquierda**.
+En este caso se trata de un **contraste de hipótesis de dos muestras independientes sobre la media con varianzas no conocidas**. Aunque previamente no se ha cumplido la normalidad de los datos por el Teorema del Límite Central podemos considerar la normalidad de los datos y aplicar un test paramétrico. En este caso aplicaremos un **test unilateral por la izquierda**, suponiendo (por lo que se ha visto en el apartado anterior) que las varianzas son iguales, por lo que el estadístico de contraste será:
+
+$$T = \frac{\overline{X_1} - \overline{X_2}}{\sqrt{(\frac{1}{n_1}+\frac{1}{n_2})}·\frac{(n_1-1)·S^2_1+(n_2-1)·S^2_2}{n_1+n_2-2}} \textrm{~} t_{n_1 + n_2 - 2}$$
 
 ```{r}
 # Buscamos el conjunto de datos de estudio:
@@ -994,11 +1004,11 @@ mean1 <- mean(X1); n1 <- length(X1)
 mean2 <- mean(X2); n2 <- length(X2)
 
 # Calculamos el valor observado y el valor crítico
-zobs <- (mean1-mean2)/sqrt(var1/n1 + var2/n2)
-zcrit <- qnorm(1-alfa)
+tobs <- (mean1-mean2)/sqrt((1/n1 + 1/n2) * ((n1-1)*var1 + (n2-1)*var2)/(n1+n2-2))
+tcrit <- pt(1-alfa/2, df = (n1+n2-2))
 
 # Finalmente calculamos el pvalue
-pvalue <- pnorm(zobs, lower.tail=TRUE)
+pvalue <- pt(tobs, lower.tail=TRUE, df = (n1+n2-2))
 print(paste("The p-value obtained is: ", pvalue))
 # Mostramos las medias de las dos variables
 print(paste("The mean of the group 1 is: ", mean(X1)))
@@ -1044,11 +1054,11 @@ mean1 <- mean(X1); n1 <- length(X1)
 mean2 <- mean(X2); n2 <- length(X2)
 
 # Calculamos el valor observado y el valor crítico
-zobs <- (mean1-mean2)/sqrt(var1/n1 + var2/n2)
-zcrit <- qnorm(1-(alfa/2))
+tobs <- (mean1-mean2)/sqrt((1/n1 + 1/n2) * ((n1-1)*var1 + (n2-1)*var2)/(n1+n2-2))
+tcrit <- pt(1-alfa, df = (n1+n2-2))
 
 # Finalmente calculamos el pvalue
-pvalue <- pnorm(zobs, lower.tail=TRUE)
+pvalue <- pt(tobs, lower.tail=TRUE, df = (n1+n2-2))
 print(paste("The p-value obtained is: ", pvalue))
 # Mostramos las medias de las dos variables
 print(paste("The mean of the group 1 is: ", mean(X1)))
@@ -1075,12 +1085,12 @@ En este caso se trata de un **contraste de hipótesis de dos muestras independie
 ```{r}
 # Buscamos el conjunto de datos de estudio:
 X1 <- booking %>%
-  filter(hotel_score>=9.0) %>%
+  filter(high_hotel_score == 1) %>%
   dplyr::select("page_count")
 X1 <- as.vector(unlist(X1),'numeric')
 
 X2 <- booking %>%
-  filter(hotel_score<9.0) %>%
+  filter(high_hotel_score == 0) %>%
   dplyr::select("page_count")
 X2 <- as.vector(unlist(X2),'numeric')
 
@@ -1096,11 +1106,11 @@ mean1 <- mean(X1); n1 <- length(X1)
 mean2 <- mean(X2); n2 <- length(X2)
 
 # Calculamos el valor observado y el valor crítico
-zobs <- (mean1-mean2)/sqrt(var1/n1 + var2/n2)
-zcrit <- qnorm(1-alfa)
+tobs <- (mean1-mean2)/sqrt((1/n1 + 1/n2) * ((n1-1)*var1 + (n2-1)*var2)/(n1+n2-2))
+tcrit <- pt(1-alfa, df = (n1+n2-2))
 
 # Finalmente calculamos el pvalue
-pvalue <- pnorm(zobs, lower.tail=TRUE)
+pvalue <- pt(tobs, lower.tail=TRUE, df = (n1+n2-2))
 print(paste("The p-value obtained is: ", pvalue))
 # Mostramos las medias de las dos variables
 print(paste("The mean of the group 1 is: ", mean(X1)))
@@ -1127,12 +1137,12 @@ En este caso también realizaremos un **contraste de hipótesis de dos muestras 
 ```{r}
 # Buscamos el conjunto de datos de estudio:
 X1 <- booking %>%
-  filter(min_price<mean(min_price)) %>%
+  filter(high_max_price == 1) %>%
   dplyr::select("page_count")
 X1 <- as.vector(unlist(X1),'numeric')
 
 X2 <- booking %>%
-  filter(min_price>=mean(min_price)) %>%
+  filter(high_max_price == 0) %>%
   dplyr::select("page_count")
 X2 <- as.vector(unlist(X2),'numeric')
 
@@ -1148,11 +1158,11 @@ mean1 <- mean(X1); n1 <- length(X1)
 mean2 <- mean(X2); n2 <- length(X2)
 
 # Calculamos el valor observado y el valor crítico
-zobs <- (mean1-mean2)/sqrt(var1/n1 + var2/n2)
-zcrit <- qnorm(1-alfa)
+tobs <- (mean1-mean2)/sqrt((1/n1 + 1/n2) * ((n1-1)*var1 + (n2-1)*var2)/(n1+n2-2))
+tcrit <- pt(1-alfa, df = (n1+n2-2))
 
 # Finalmente calculamos el pvalue
-pvalue <- pnorm(zobs, lower.tail=TRUE)
+pvalue <- pt(tobs, lower.tail=TRUE, df = (n1+n2-2))
 print(paste("The p-value obtained is: ", pvalue))
 # Mostramos las medias de las dos variables
 print(paste("The mean of the group 1 is: ", mean(X1)))
@@ -1164,19 +1174,19 @@ En este caso se ha obtenido un p-value de 0.99, por lo que se acepta la hipótes
 #### 4.4 Aplicación de funciones lineales para resolución del problema
 Una vez analizados los distintos contrastes de hipótesis y hayada la correlación entre las distintas variables, tenemos un conocimiento del conjunto de datos lo suficientemente extenso como para analizar mediante una función lineal el posicionamiento de un hotel en el buscador de Booking.
 
-Tras los resultados que se han obtenido observamos que hay distintas variables que pueden tener una mayor influencia sobre nuestra variable objetivo. Por un lado, si nos basamos en lo obtenido tras el análisis de correlación hayamos que variables como **min_price**, **comfort_score**, **cleanliness_score**, **safe** o **hotel_score** entre otros tienen una gran relevancia. Por otro lado, variables como **air_conditioning** o **has_free_cancelation** han mostrado una relevancia significativa durante el contraste de hipótesis. 
+Tras los resultados que se han obtenido observamos que hay distintas variables que pueden tener una mayor influencia sobre nuestra variable objetivo. Por un lado, si nos basamos en lo obtenido tras el análisis de correlación hayamos que variables como **kitchen**, **is_apartment**, **elevator**, **private_bathroom**, **num_rooms**, **value_for_money_score**, **heating**, **pet_friendly** entre otros tienen una gran relevancia. Por otro lado, variables como **air_conditioning** o **free_wifi** han mostrado una relevancia significativa durante el contraste de hipótesis. 
 
-En este apartado comenzaremos tratando de ajustar una regresión lineal simple aproximando la variable dependiente **page_count** con la variable explicativa que ha proporcionado una mayor correlación, que ha resultado ser **comfort_score**.
+En este apartado comenzaremos tratando de ajustar una regresión lineal simple aproximando la variable dependiente **page_count** con la variable explicativa que ha proporcionado una mayor correlación, que ha resultado ser **kitchen**.
 
 ```{r}
 #Create the linear model
-mrl <- lm(page_count~C, data=booking)
+mrl <- lm(page_count~kitchen, data=booking)
 
 #Evaluate the data
 summary(mrl)
 ```
 
-Obtenemos un valor de R-squared de 0.005, lo que es un valor muy bajo y representa una aproximación muy mala de la variable dependiente.
+Obtenemos un valor de R-squared de 0.0127, lo que es un valor muy bajo y representa una aproximación muy mala de la variable dependiente.
 
 Con el objetivo de mejorar los resultados obtenidos se realizará una regresión lineal múltiple que consideré todas las puntuaciones del hotel para predecir la posición de este. Para ello empleamos las variables: **hotel_score**, **staff_score**, **facilities_score**, **cleanliness_score**, **comfort_score**, **value_for_money_score**, **location_score** y **free_wifi_score**, para ver como la opinión de los clientes afecta en el posicionamiento de este en Booking.
 
@@ -1188,14 +1198,14 @@ mrl_scores <- lm(page_count~hotel_score + staff_score + facilities_score + clean
 summary(mrl_scores)
 ```
 
-Se observa que con la regresión lineal multiple R-squared aumenta hasta 0.02, unas 4 veces mejor que empleando solo una variable, pero aún así los resultados obtenidos son muy malos y no aproximan de una forma correcta la variable dependiente.
+Se observa que con la regresión lineal multiple R-squared aumenta hasta 0.02, algo mejor que empleando solo una variable, pero aún así los resultados obtenidos son muy malos y no aproximan de una forma correcta la variable dependiente.
 
 De este primer análisis observamos que de todas las variables empleadas, las que han tenido una mayor influencia sobre la variable dependiente han sido **staff_score**, **value_for_money_score**, **location_store** y **free_wifi_score**. A continuación generamos una regresión lineal múltiple empleando tan solo estas variables.
 
 
 ```{r}
 #Create the linear model
-mrl_scores <- lm(page_count~staff_score + value_for_money_score + location_score + free_wifi_score, data=booking)
+mrl_scores <- lm(page_count~ staff_score + value_for_money_score + location_score + free_wifi_score, data=booking)
 
 #Evaluate the data
 summary(mrl_scores)
@@ -1207,7 +1217,7 @@ A continuación, mantendremos estas variables que han mostrado los mejores resul
 
 ```{r}
 #Create the linear model
-mrl_complete <- lm(page_count~staff_score + value_for_money_score + location_score + free_wifi_score + min_price + balcony + pet_friendly + air_conditioning + private_bathroom + free_wifi + swimming_pool + non_smoking_rooms + mean_flights + length_description + safe, data=booking)
+mrl_complete <- lm(page_count~staff_score + value_for_money_score + location_score + free_wifi_score + min_price + balcony + pet_friendly + air_conditioning + private_bathroom + free_wifi + swimming_pool + non_smoking_rooms + mean_flights + length_description + safe + kitchen, data = booking)
 
 #Evaluate the data
 summary(mrl_complete)
@@ -1215,42 +1225,42 @@ summary(mrl_complete)
 
 Con todas las variables la R-squared ha aumentado hasta 0.057, que sigue siendo un resultado muy bajo, pero dificil de mejorar con unos datos tan poco correlacionados con la variable objetivo.
 
-De todas las variables empleadas se observa que las que tienen una mayor influencia son: **staff_score**, **value_for_money_score**, **free_wifi_score**, **balcony**, **pet_friendly**, **air_conditioning**, **swimming_pool**, **mean_flights** y **length_description**. A continuación se aproxima la variable dependiente basándonos exclusivamente en estas variables.
+De todas las variables empleadas se observa que las que tienen una mayor influencia son: **staff_score**, **value_for_money_score**, **free_wifi_score**, **balcony**, **pet_friendly**, **free_wifi**, **air_conditioning**, **swimming_pool**, **mean_flights** y **length_description** y **kitchen**. A continuación se aproxima la variable dependiente basándonos exclusivamente en estas variables.
 
 ```{r}
 #Create the linear model
-mrl_final <- lm(page_count~staff_score + value_for_money_score + free_wifi_score + balcony + pet_friendly + air_conditioning + swimming_pool + mean_flights + length_description, data=booking)
+mrl_final <- lm(page_count~staff_score + value_for_money_score + free_wifi_score + balcony + pet_friendly + air_conditioning + free_wifi + swimming_pool + mean_flights + length_description + kitchen, data=booking)
 
 #Evaluate the data
 summary(mrl_final)
 ```
 
-De esta forma hemos conseguido mantener una R-squared similar a la obtenida previamente, pero empleando exclusivamente 9 variables en lugar de las más de 40 variables iniciales.
+De esta forma hemos conseguido mantener una R-squared similar a la obtenida previamente, pero empleando exclusivamente 11 variables en lugar de las más de 40 variables iniciales.
 
 
-Anteriormente se ha observado una correlación entre el precio de la habitación y sus características, en concreto había una correlación con el precio máximo de esta. A continuación, se tratará de predecir el precio máximo de la habitación mediante una regresión lineal múltiple empleando el resto de variables para ello:
+Anteriormente se ha observado una correlación entre el precio de la habitación y sus características, en concreto existen varias variable con una correlación moderada con el precio máximo de esta. A continuación, se tratará de predecir el precio máximo de la habitación mediante una regresión lineal múltiple empleando el resto de variables para ello:
 
 ```{r}
 #Create the linear model
-mrl_price <- lm(max_price~staff_score + value_for_money_score + location_score + free_wifi_score + balcony + pet_friendly + air_conditioning + private_bathroom + free_wifi + swimming_pool + non_smoking_rooms + mean_flights + length_description + safe, data=booking)
+mrl_price <- lm(max_price~ postal_code + balcony + pet_friendly + latitude + air_conditioning + private_bathroom + free_wifi + staff_score + swimming_pool + non_smoking_rooms + location_score + mean_flights + length_description + facilities_score + hotel_score + safe + cleanliness_score + comfort_score, data=booking)
 
 #Evaluate the data
 summary(mrl_price)
 ```
 
-Con ello obtenemos una R-squared de 0.2125, con lo que podemos observar que variables que tienen una mayor correlación con la variable objetivo nos proporcionarán unos resultados más apropiados. A portir de los resultados mostrados podemos mejorar la regresión empleando tan solo aquellas variables que han aportado más información en la regresión como han sido: **staff_score**, **location_score**, **balcony**, **air_conditioning**, **free_wifi**, **swimming_pool**, **non_smoking_rooms**, **mean_flights**, **length_description** y **safe**.
+Con ello obtenemos una R-squared de 0.2572, con lo que podemos observar que variables que tienen una mayor correlación con la variable objetivo nos proporcionarán unos resultados más apropiados. A partir de los resultados mostrados podemos mejorar la regresión empleando tan solo aquellas variables que han aportado más información en la regresión, es decir, todas excepto **pet_friendly**, **private_bathroom** y **hotel_score**. 
 
-A continuación se emplea una regresión lineal múltiple tan solo con estas variables.
+A continuación se emplea una regresión lineal múltiple exceptuando dichas variables.
 
 ```{r}
 #Create the linear model
-mrl_price <- lm(max_price~staff_score + location_score + balcony + air_conditioning + free_wifi + swimming_pool + non_smoking_rooms + mean_flights + length_description + safe, data=booking)
+mrl_price <- lm(max_price~postal_code + balcony + latitude + air_conditioning + free_wifi + staff_score + swimming_pool + non_smoking_rooms + location_score + mean_flights + length_description + facilities_score + safe + cleanliness_score + comfort_score, data=booking)
 
 #Evaluate the data
 summary(mrl_price)
 ```
 
-Se observa que aun habiendo reducido el número de variables, mantenemos una R-squares ligeramente superior 0.21. Hay que tener en cuenta que los resultados siguen sin ser satisfactorios, ya que una R-squared de 0.21 es bastante baja, no obstante es mucho mejor que lo obtenido tratando de predecir la variable page_count. Esta mala predicción es producida como se había comentado previamente debido a la baja correlación de las variables con la variable objetivo.
+Se observa que aun habiendo reducido el número de variables, mantenemos una R-squares ligeramente superior 0.2571. Hay que tener en cuenta que los resultados siguen sin ser satisfactorios, ya que una R-squared de 0.257 es bastante baja, no obstante es mucho mejor que lo obtenido tratando de predecir la variable page_count. Esta mala predicción es producida como se había comentado previamente debido a la baja correlación de las variables con la variable objetivo.
 
 ## 5. REPRESENTACIÓN DE LOS RESULTADOS
 
