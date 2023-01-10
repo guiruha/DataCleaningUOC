@@ -953,14 +953,14 @@ En este apartado se aplicarán distintas pruebas estadísticas para comparar los
 * **air_conditioning**
 * **has_free_cancelation**
 * **hotel_score**
-* **min_price**
+* **max_price**
 
 Las hipótesis que trataremos de verificar serán las siguientes:
 
 * Aquellos hoteles con aire acondicionado tendrán una mejor posición (page_count inferior) a los que no dispongan de este.
 * Los hoteles con cancelación gratuita tendrán una posición diferente a los que no dispongan de esta.
 * Los hoteles con una puntuación global superior a un 9 tendrán un mejor posicionamiento.
-* Los hoteles con un precio mínimo inferior a la media tendrán un mejor posicionamiento.
+* Los hoteles con un precio máximo superior a la media tendrán un peor posicionamiento.
 
 A continuación se estudiará cada una de estas hipótesis y el resultado obtenido.
 
@@ -1005,7 +1005,7 @@ mean2 <- mean(X2); n2 <- length(X2)
 
 # Calculamos el valor observado y el valor crítico
 tobs <- (mean1-mean2)/sqrt((1/n1 + 1/n2) * ((n1-1)*var1 + (n2-1)*var2)/(n1+n2-2))
-tcrit <- pt(1-alfa/2, df = (n1+n2-2))
+tcrit <- pt(1-alfa, df = (n1+n2-2))
 
 # Finalmente calculamos el pvalue
 pvalue <- pt(tobs, lower.tail=TRUE, df = (n1+n2-2))
@@ -1028,7 +1028,7 @@ O en otras palabras:
 * $H_{0}: \mu_0 = \mu_1$
 * $H_{1}: \mu_0 \neq \mu_1$
 
-En este caso se trata de un **contraste de hipótesis de dos muestras independientes sobre la media con varianzas conocidas**, al igual que en el caso anterior por el TLC podemos aceptar la normalidad de los datos y aplicar un test paramétrico, en concreto un **test bilateral**.
+En este caso se trata de un **contraste de hipótesis de dos muestras independientes sobre la media con varianzas no conocidas**, al igual que en el caso anterior por el TLC podemos aceptar la normalidad de los datos y aplicar un test paramétrico, en concreto un **test bilateral**.
 
 ```{r}
 # Buscamos el conjunto de datos de estudio:
@@ -1055,7 +1055,7 @@ mean2 <- mean(X2); n2 <- length(X2)
 
 # Calculamos el valor observado y el valor crítico
 tobs <- (mean1-mean2)/sqrt((1/n1 + 1/n2) * ((n1-1)*var1 + (n2-1)*var2)/(n1+n2-2))
-tcrit <- pt(1-alfa, df = (n1+n2-2))
+tcrit <- pt(1-alfa/2, df = (n1+n2-2))
 
 # Finalmente calculamos el pvalue
 pvalue <- pt(tobs, lower.tail=TRUE, df = (n1+n2-2))
@@ -1080,7 +1080,7 @@ O en otras palabras:
 * $H_{0}: \mu_0 = \mu_1$
 * $H_{1}: \mu_0 \le \mu_1$
 
-En este caso se trata de un **contraste de hipótesis de dos muestras independientes sobre la media con varianzas conocidas**. Al igual que en los casos anteriores podemos asumir la normalidad de los datos por el TLC. En este caso se aplicará un **test bilateral por la izquierda**.
+En este caso se trata de un **contraste de hipótesis de dos muestras independientes sobre la media con varianzas no conocidas**. Al igual que en los casos anteriores podemos asumir la normalidad de los datos por el TLC. En este caso se aplicará un **test unilateral por la izquierda**.
 
 ```{r}
 # Buscamos el conjunto de datos de estudio:
@@ -1120,19 +1120,19 @@ print(paste("The mean of the group 2 is: ", mean(X2)))
 Se obtiene un valor del p-value de 0.048, el cual aún siendo muy cercano a 0.05 que utilizamos para el intérvalo de confianza es inferior, por lo que se debe rechazar la hipótesis nula y podemos decir que **un hotel con una puntuación superior a 9.0 obtendrá un mejor posicionamiento que el resto de hoteles**. No obstante, por el valor obtenido podemos determinar que esta variable no es tan influyente como el aire acondicionado o la cancelación gratuita.
 
 **Hipótesis 4**
-Finalmente evaluamos la influencia del precio mínimo del hotel considerando que un hotel con un menor precio mínimo tendrá un mejor posicionamiento. Para ello consideraremos las siguientes hipótesis nula ($H_{0}$) y alternativa ($H_{1}$)
+Finalmente evaluamos la influencia del precio máximo del hotel considerando que un hotel con un mayor precio máximo tendrá un peor posicionamiento. Para ello consideraremos las siguientes hipótesis nula ($H_{0}$) y alternativa ($H_{1}$)
 
-Los hoteles con un precio mínimo inferior a la media tendrán un mejor posicionamiento.
+Los hoteles con un precio máximo superior a la media tendrán un peor posicionamiento.
 
-* $H_{0}:$ La posición global de un hotel con precio mínimo inferior a la media y uno superior serán iguales.
-* $H_{1}:$ La posición global de un hotel con precio mínimo inferior a la media será mejor (inferior) a la de uno con precio superior.
+* $H_{0}:$ La posición global de un hotel con precio máximo superior a la media y uno inferior serán iguales.
+* $H_{1}:$ La posición global de un hotel con precio máximo superior a la media será peor (superior) a la de uno con precio inferior
 
 O en otras palabras:
 
 * $H_{0}: \mu_0 = \mu_1$
 * $H_{1}: \mu_0 \le \mu_1$
 
-En este caso también realizaremos un **contraste de hipótesis de dos muestras independientes sobre la media con varianzas conocidas**. Como se ha visto en los casos anteriores, por el TLC podemos asumir la normalidad de los datos y aplicaremos un test paramétrico, en este caso emplearemos un **test unilateral por la izquierda**.
+En este caso también realizaremos un **contraste de hipótesis de dos muestras independientes sobre la media con varianzas no conocidas**. Como se ha visto en los casos anteriores, por el TLC podemos asumir la normalidad de los datos y aplicaremos un test paramétrico, en este caso emplearemos un **test unilateral por la derecha**.
 
 ```{r}
 # Buscamos el conjunto de datos de estudio:
@@ -1162,14 +1162,14 @@ tobs <- (mean1-mean2)/sqrt((1/n1 + 1/n2) * ((n1-1)*var1 + (n2-1)*var2)/(n1+n2-2)
 tcrit <- pt(1-alfa, df = (n1+n2-2))
 
 # Finalmente calculamos el pvalue
-pvalue <- pt(tobs, lower.tail=TRUE, df = (n1+n2-2))
+pvalue <- pt(tobs, lower.tail=FALSE, df = (n1+n2-2))
 print(paste("The p-value obtained is: ", pvalue))
 # Mostramos las medias de las dos variables
 print(paste("The mean of the group 1 is: ", mean(X1)))
 print(paste("The mean of the group 2 is: ", mean(X2)))
 ```
 
-En este caso se ha obtenido un p-value de 0.99, por lo que se acepta la hipótesis nula y obtenemos que **los hoteles con un precio mínimo inferior a la media no obtiene un mejor posicionamiento que el resto de hoteles**. Es más en este caso se ha observado que que la media de posicionamiento de los hoteles con un precio mínimo superior a la media ha sido ligeramente mejor al resto.
+En este caso se ha obtenido un p-value de 0.98, por lo que se acepta la hipótesis nula y obtenemos que **los hoteles con un precio máximo superior a la media no obtiene un peor posicionamiento que el resto de hoteles**. Es más en este caso se ha observado que que la media de posicionamiento de los hoteles con un precio máximo superior a la media ha sido ligeramente mejor al resto.
 
 #### 4.4 Aplicación de funciones lineales para resolución del problema
 Una vez analizados los distintos contrastes de hipótesis y hayada la correlación entre las distintas variables, tenemos un conocimiento del conjunto de datos lo suficientemente extenso como para analizar mediante una función lineal el posicionamiento de un hotel en el buscador de Booking.
@@ -1198,7 +1198,7 @@ mrl_scores <- lm(page_count~hotel_score + staff_score + facilities_score + clean
 summary(mrl_scores)
 ```
 
-Se observa que con la regresión lineal multiple R-squared aumenta hasta 0.02, algo mejor que empleando solo una variable, pero aún así los resultados obtenidos son muy malos y no aproximan de una forma correcta la variable dependiente.
+Se observa que con la regresión lineal multiple R-squared aumenta hasta 0.019, algo mejor que empleando solo una variable, pero aún así los resultados obtenidos son muy malos y no aproximan de una forma correcta la variable dependiente.
 
 De este primer análisis observamos que de todas las variables empleadas, las que han tenido una mayor influencia sobre la variable dependiente han sido **staff_score**, **value_for_money_score**, **location_store** y **free_wifi_score**. A continuación generamos una regresión lineal múltiple empleando tan solo estas variables.
 
@@ -1211,7 +1211,7 @@ mrl_scores <- lm(page_count~ staff_score + value_for_money_score + location_scor
 summary(mrl_scores)
 ```
 
-Observamos que habiendo empleado tan solo 4 variables, de las 8 empleadas previamente, el R-squared tan solo se ha visto reducido en 0.0015.
+Observamos que habiendo empleado tan solo 4 variables, de las 8 empleadas previamente, el R-squared tan solo se ha visto reducido en 0.0005.
 
 A continuación, mantendremos estas variables que han mostrado los mejores resultados y añadiremos las que habíamos hallado que tenían una mayor correlación con la variable dependiente.
 
@@ -1223,7 +1223,7 @@ mrl_complete <- lm(page_count~staff_score + value_for_money_score + location_sco
 summary(mrl_complete)
 ```
 
-Con todas las variables la R-squared ha aumentado hasta 0.057, que sigue siendo un resultado muy bajo, pero dificil de mejorar con unos datos tan poco correlacionados con la variable objetivo.
+Con todas las variables la R-squared ha aumentado hasta 0.055, que sigue siendo un resultado muy bajo, pero dificil de mejorar con unos datos tan poco correlacionados con la variable objetivo.
 
 De todas las variables empleadas se observa que las que tienen una mayor influencia son: **staff_score**, **value_for_money_score**, **free_wifi_score**, **balcony**, **pet_friendly**, **free_wifi**, **air_conditioning**, **swimming_pool**, **mean_flights** y **length_description** y **kitchen**. A continuación se aproxima la variable dependiente basándonos exclusivamente en estas variables.
 
