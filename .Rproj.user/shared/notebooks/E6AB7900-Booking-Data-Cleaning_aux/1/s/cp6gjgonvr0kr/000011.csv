@@ -1,0 +1,6 @@
+"0",""
+"0","booking <- booking %>%"
+"0","  select(-c(""month_out"", ""check_in"", ""check_out"", ""as.integer(!is.na(NA))""))"
+"0",""
+"0","write.csv(booking, ""hotel_data_processed.csv"")"
+"0",""

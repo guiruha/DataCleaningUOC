@@ -1,0 +1,8 @@
+"0","# Separamos los valores de la variable hotel coordinates en dos nuevas columnas, latitud y longitud"
+"0","# La columna hotel_coordinates se elimina en el proceso"
+"0",""
+"0","booking <- booking %>%"
+"0","  separate(hotel_coordinates, c(""latitude"", ""longitude""), sep = "","", remove = FALSE)"
+"2","Warning: Expected 2 pieces. Missing pieces filled with `NA` in 16 rows [202, 203, 223, 224, 225, 226, 227, 664, 665, 765, 1598, 2455, 2672, 2789, 2993, 2999]."
+"0","booking$latitude <- as.numeric(booking$latitude)"
+"0","booking$longitude <- as.numeric(booking$longitude)"

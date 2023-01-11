@@ -1,0 +1,5 @@
+"0",""
+"0","# Imputamos los datos con K Neirest Neighbours"
+"0","booking$max_price <- kNN(booking)$max_price"
+"0","booking$min_price <- kNN(booking)$min_price "
+"0",""

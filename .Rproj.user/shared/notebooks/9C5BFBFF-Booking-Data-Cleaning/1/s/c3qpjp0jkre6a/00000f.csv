@@ -1,0 +1,3 @@
+"0","ggplot(booking, aes(x = max_price, y = page_count, color = free_wifi)) + "
+"0","  geom_point()+"
+"0","  facet_grid(free_wifi~.)"

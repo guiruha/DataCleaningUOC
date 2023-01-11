@@ -1,0 +1,5 @@
+"0",""
+"0","booking %>%"
+"0","  filter(hotel_score <= 7.0) %>%"
+"0","  dplyr::select(c(""hotel_score"", ""facilities_score"", ""cleanliness_score"", ""location_score"")) %>%"
+"0","  sample_n(5)"

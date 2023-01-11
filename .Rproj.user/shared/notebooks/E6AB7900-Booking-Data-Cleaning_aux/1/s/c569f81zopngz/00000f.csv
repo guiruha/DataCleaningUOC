@@ -1,0 +1,5 @@
+"0",""
+"0","# Comprobamos algunos de los registros donde hay datos faltantes de hotel_score"
+"0","booking[booking$hotel_score == ""-1"",] %>%"
+"0","  select(c(""city"", ""month_in"", ""hotel_score"", ""staff_score"", ""location_score"", ""longitude"", ""facilities_score"", ""cleanliness_score"", ""comfort_score"")) %>%"
+"0","  tail(5)"

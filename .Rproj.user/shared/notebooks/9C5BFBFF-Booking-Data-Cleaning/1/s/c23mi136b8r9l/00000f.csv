@@ -1,0 +1,16 @@
+"0","# Definimos las features que consideramos que son interesantes. Utilizamos este formato para filtrar por expresión regular."
+"0","feature_list <- c(""('Free WiFi')"", ""('Air conditioning')"", ""('24-hour front desk')"", ""('Safe')"", ""('Heating')"", ""('Elevator')"", ""('Private Bathroom')"", ""('Non-smoking rooms')"", ""('Apartments')"", ""('City view')"",""('Kitchen')"", ""('Pet friendly')"", ""('Swimming pool')"", ""('Balcony')"")"
+"0",""
+"0","# Creamos un bucle en el que se recorre cada elemento de la lista de features"
+"0","for (feature in feature_list){"
+"0","  # Se eliminan los parentésis y comillas de la variable local feature para crear el nombre de la columna."
+"0","  col_name <- str_replace(str_replace(str_to_lower(str_extract(feature, ""([A-Z][a-z]*( |-)?[A-Z]?[a-z]* ? ?[A-Z]?[a-z]*)"")), "" "", ""_""), ""-"", ""_"")"
+"0","  booking <- booking %>%"
+"0","  # Extraemos el nombre del feature de cada uno de los registros (strings). En caso de que no encuentre ningún valor devuelve un NA."
+"0","  extract(features, c(col_name), regex = feature, remove = FALSE) %>%"
+"0","  # Transformamos la columna que acaba de ser creada para que indique con un 1 si el registro tenia dicho servicio y 0 si el valor era NA (no tenida dicho servicio)"
+"0","  mutate_(.dots = setNames(list(paste0(""as.integer(!is.na("",col_name,""))"")), col_name))"
+"0","}"
+"2","Warning: `mutate_()` was deprecated in dplyr 0.7.0.
+Please use `mutate()` instead.
+See vignette('programming') for more help"

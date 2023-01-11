@@ -1,0 +1,4 @@
+"0","# Seleccionamos con la función ""select"" de dplyr todas las columnas excepto name y search_date, que nos van a ser de poca utilidad."
+"0",""
+"0","booking <- booking %>%"
+"0","  select(-c(""name"", ""search_date""))"

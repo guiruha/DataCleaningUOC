@@ -1,0 +1,4 @@
+"0",""
+"0","ggplot(booking, aes(y = cleanliness_score, color = city))+"
+"0","  geom_boxplot() +"
+"0","  facet_grid(~city)"

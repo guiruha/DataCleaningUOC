@@ -1,0 +1,5 @@
+"0",""
+"0","booking$current_page <- as.factor(booking$current_page)"
+"0","ggplot(booking, aes(x = current_page, y = min_price, color = current_page)) + "
+"0","  geom_boxplot()"
+"0",""

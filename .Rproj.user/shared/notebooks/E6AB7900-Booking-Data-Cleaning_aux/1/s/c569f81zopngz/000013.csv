@@ -1,0 +1,5 @@
+"0",""
+"0",""
+"0","# Tranformamos los valores -1 en NAs para poder llevar a cabo el proceso de inputación correctamente."
+"0","booking$hotel_score <- ifelse(booking$hotel_score == ""-1"", NA, booking$hotel_score)"
+"0",""

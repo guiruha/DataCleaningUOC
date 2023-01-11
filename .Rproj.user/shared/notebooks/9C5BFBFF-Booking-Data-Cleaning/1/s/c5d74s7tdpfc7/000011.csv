@@ -1,0 +1,4 @@
+"0",""
+"0","booking[booking$hotel_score == ""-1"",] %>%"
+"0","  dplyr::select(c(""city"", ""month"", ""hotel_score"", ""staff_score"", ""free_wifi_score"", ""free_wifi"")) %>%"
+"0","  tail(10)"

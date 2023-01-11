@@ -1,0 +1,20 @@
+"0",""
+"0","norm_cols <- c(""value_for_money_score"", ""comfort_score"", ""hotel_score"", ""staff_score"", ""cleanliness_score"", ""location_score"", ""facilities_score"", ""length_description"", ""min_price"", ""max_price"", ""page_count"")"
+"0",""
+"0","booking_norm <- booking_numeric %>%"
+"0","  dplyr::select(norm_cols)"
+"2","Warning: Using an external vector in selections was deprecated in tidyselect 1.1.0.
+Please use `all_of()` or `any_of()` instead.
+# Was:
+data %>% select(norm_cols)
+
+# Now:
+data %>% select(all_of(norm_cols))
+
+See <https://tidyselect.r-lib.org/reference/faq-external-vector.html>."
+"0","par(mfrow=c(2,2))"
+"0","for(i in 1:ncol(booking_norm)){"
+"0","  qqnorm(booking_norm[,i], main = paste(""QQ-Plot de"",colnames(booking_norm)[i]), col = ""navy"")"
+"0","  qqline(booking_norm[,i], col = ""red"")"
+"0","  hist(booking_norm[,i], main = paste(""Histograma de"", colnames(booking_norm)[i]), xlab=colnames(booking_norm)[i], freq = FALSE)"
+"0","}"

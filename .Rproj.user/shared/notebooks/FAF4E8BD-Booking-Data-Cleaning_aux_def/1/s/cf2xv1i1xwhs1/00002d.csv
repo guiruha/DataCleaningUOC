@@ -1,0 +1,5 @@
+"0",""
+"0","booking_price <- booking_numeric %>%"
+"0","  dplyr::select(c(""postal_code"", ""balcony"", ""latitude"", ""air_conditioning"", ""private_bathroom"", ""staff_score"", ""swimming_pool"","
+"0","                  ""location_score"", ""non_smoking_rooms"", ""mean_flights"", ""length_description"", ""facilities_score"", ""hotel_score"","
+"0","                  ""safe"", ""cleanliness_score"", ""comfort_score"", ""max_price""))"

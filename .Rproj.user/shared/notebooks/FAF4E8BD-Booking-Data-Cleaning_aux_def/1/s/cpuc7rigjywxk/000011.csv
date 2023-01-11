@@ -1,0 +1,4 @@
+"0",""
+"0","ggplot(booking, aes(x = city, y = min_price, color = city)) + "
+"0","  geom_boxplot()"
+"0",""

@@ -1,0 +1,6 @@
+"0","booking <- booking %>%"
+"0","  mutate(high_hotel_score = ifelse(hotel_score >= 9, 1, 0))"
+"0",""
+"0","ggplot(booking, aes(x = max_price, y = page_count, color = high_hotel_score)) + "
+"0","  geom_point()+"
+"0","  facet_grid(high_hotel_score~.)"

@@ -1,0 +1,4 @@
+"0","# Tipo de dato asignado a cada variable"
+"0",""
+"0","res <- sapply(booking, function(x) class(x))"
+"0","kable(data.frame(var=names(res), clase=as.vector(res)))"
