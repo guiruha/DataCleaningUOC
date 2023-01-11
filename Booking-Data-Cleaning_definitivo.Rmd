@@ -68,7 +68,7 @@ Dado que muchas de las variables que desecharemos en la sección de selección e
 ```{r}
 # Lectura y breve descripción de los datos
 
-booking <- read.csv("../data/hotels_data.csv", header = TRUE)
+booking <- read.csv("data/hotels_data.csv", header = TRUE)
 summary(booking)
 ```
 
@@ -676,7 +676,7 @@ Por otro lado, hemos optado por añadir datos de vuelos por varias razones:
 
 ```{r}
 # Leemos los datos de vuelos
-flights <- read.csv("../data/avia_tf_apal_linear.csv.gz")
+flights <- read.csv("data/avia_tf_apal_linear.csv.gz")
 summary(flights)
 ```
 
