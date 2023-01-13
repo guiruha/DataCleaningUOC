@@ -31,6 +31,9 @@ Namely, this project aims to clean and analyze the data coming from the Web Scra
     ├───Memoria_PRAC2.pdf
     │
     │
+    ├───Video_PRAC2.mp4
+    │
+    │
     └───DataCleaningUOC.Rproj
 ```
 - **data/avia_tf_apal_linear.csv.gz**: Dataset of flights collected from Eurostat
@@ -41,6 +44,7 @@ Namely, this project aims to clean and analyze the data coming from the Web Scra
 - **src/Booking-Data-Cleaning.R**: R script containing all the code used in the R-Markdown.
 - **src/Booking-Data-Cleaning.Rmd**: Markdown containing the extended report of all the cleaning and analysis process of the present project. 
 - **Memoria_PRAC2.pdf**: Pdf containing answers to the questions of this practice.
+- **Video_PRAC2.mp4**: Video explaining the steps of this project.
 - **DataCleaningUOC.Rproj**: The R project of the present practice.
 
 ## Resources
