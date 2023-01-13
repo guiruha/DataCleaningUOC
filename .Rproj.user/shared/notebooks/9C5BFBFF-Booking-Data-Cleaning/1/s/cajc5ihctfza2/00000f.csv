@@ -1,6 +1,0 @@
-"0","booking <- booking %>%"
-"0","  mutate(high_max_price = ifelse(max_price >= mean(max_price), 1, 0))"
-"0",""
-"0","ggplot(booking, aes(x = min_price, y = page_count, color = high_max_price)) + "
-"0","  geom_point()+"
-"0","  facet_grid(high_max_price~.)"

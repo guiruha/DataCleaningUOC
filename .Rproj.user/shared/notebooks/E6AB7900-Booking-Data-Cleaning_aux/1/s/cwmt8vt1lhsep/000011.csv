@@ -1,4 +1,0 @@
-"0",""
-"0","# Filtramos los datos para eliminar aquellos registros que tienen NAs en postal_code"
-"0","booking <- booking[!is.na(booking$postal_code),]"
-"0","  "

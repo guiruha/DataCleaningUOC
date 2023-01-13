@@ -1,5 +1,0 @@
-"0","booking <- booking %>%"
-"0","  # Separamos el nombre del mes del resto de elementos del registro para check_in y check_out. Eliminamos las columnas en el proceso."
-"0","  separate(check.in, c(NA, ""month"", NA), sep = ""-"", remove = FALSE) %>%"
-"0","  mutate(is_december = ifelse(month == ""December"", 1, 0),"
-"0","         is_march = ifelse(month == ""March"", 1, 0))"

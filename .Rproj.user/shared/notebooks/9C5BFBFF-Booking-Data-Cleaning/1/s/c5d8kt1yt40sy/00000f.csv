@@ -1,4 +1,0 @@
-"0",""
-"0","ggplot(booking, aes(y = longitude, color = city))+"
-"0","  geom_boxplot() +"
-"0","  facet_grid(~city)"

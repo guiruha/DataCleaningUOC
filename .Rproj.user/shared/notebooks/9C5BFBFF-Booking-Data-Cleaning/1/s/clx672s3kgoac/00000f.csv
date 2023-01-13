@@ -1,8 +1,0 @@
-"0","# Filtramos para obtener cuales son las variables más correlacionadas con nuestra variable objetivo, current_page"
-"0","cor_mat <- cor(booking_numeric, method = ""spearman"")"
-"0","cor_mat_df <- as.data.frame(cor_mat)"
-"0","cor_mat_df %>%"
-"0","  filter(abs(page_count) > 0.065) %>%"
-"0","  filter(page_count < 0.95) %>%"
-"0","  arrange(page_count) %>%"
-"0","  dplyr::select(page_count)"

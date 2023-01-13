@@ -1,6 +1,0 @@
-"0","# Evaluamos la longitud de la descripción del hotel"
-"0","booking$length_description <- lengths(gregexpr(""\\W+"", booking$hotel_description)) + 1"
-"0",""
-"0","# Eliminamos la columna hotel_description"
-"0","booking <- booking %>%"
-"0","    select(-c(""hotel_description""))"

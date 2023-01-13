@@ -1,8 +1,0 @@
-"0","predicted <- predict(model_price_2, booking_price, type=""response"")"
-"0","comparison <- data.frame("
-"0","  real = booking_price$max_price,"
-"0","  predicted = predicted,"
-"0","  df = booking_price$max_price - predicted"
-"0",")"
-"0","colnames(comparison) <- c(""Real"", ""Predecido"", ""Diferencia"")"
-"0","kable(sample_n(comparison, 20))"

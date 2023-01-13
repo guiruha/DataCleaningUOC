@@ -1,4 +1,0 @@
-"0",""
-"0","booking[is.na(booking$min_price),] %>%"
-"0","  dplyr::select(c(""city"", ""month"", ""hotel_score"", ""max_price"", ""min_price"")) %>%"
-"0","  tail(10)"

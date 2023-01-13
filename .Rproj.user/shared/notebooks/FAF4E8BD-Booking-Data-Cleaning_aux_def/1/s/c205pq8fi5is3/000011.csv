@@ -1,4 +1,0 @@
-"0",""
-"0","ggplot(booking, aes(x = month_in, y = min_price, color = month_in)) + "
-"0","  geom_boxplot()"
-"0",""

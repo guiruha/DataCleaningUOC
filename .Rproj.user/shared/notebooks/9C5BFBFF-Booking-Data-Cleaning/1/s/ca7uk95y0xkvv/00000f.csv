@@ -1,7 +1,0 @@
-"0","# Seleccionamos con la función ""select"" de dplyr todas las columnas excepto las que ya hemos limpiado para crear otras, además de aquellasque nos van a ser de poca utilidad."
-"0",""
-"0","booking <- booking %>%"
-"0","  dplyr::select(-c(""name"", ""search_date"", ""hotel_coordinates"", ""hotel_scores"", ""check.in"", ""check.out"", ""address"", ""features"", ""hotel_description"", ""room_data"", ""as.integer(!is.na(NA))""))"
-"0",""
-"0","# Exportamos los datos a un archivo csv"
-"0","write.csv(booking, ""hotel_data_processed.csv"")"

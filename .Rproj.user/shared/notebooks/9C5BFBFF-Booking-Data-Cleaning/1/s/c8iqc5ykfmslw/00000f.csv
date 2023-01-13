@@ -1,4 +1,0 @@
-"0","booking_pcount <- booking_numeric %>%"
-"0","  dplyr::select(c(""kitchen"", ""is_apartment"", ""adults"", ""air_conditioning"", ""elevator"", ""private_bathroom"","
-"0","           ""num_rooms"", ""value_for_money_score"", ""heating"", ""non_smoking_rooms"", ""comfort_score"", ""hotel_score"","
-"0","           ""longitude"", ""has_free_cancelation"", ""page_count""))"

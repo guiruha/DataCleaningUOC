@@ -1,8 +1,0 @@
-"0","par(mfrow=c(2,3))"
-"0","for(i in 1:ncol(booking_norm)){"
-"0","  b <- boxcox(lm(booking_norm[,i] ~ 1))"
-"0","  lambda <- b$x[which.max(b$y)]"
-"0","  qqnorm((booking_norm[,i]^lambda - 1)/lambda, main = paste(""QQ-Plot de"",colnames(booking_norm)[i]), col = ""navy"")"
-"0","  qqline((booking_norm[,i]^lambda - 1)/lambda, col = ""red"")"
-"0","  hist((booking_norm[,i]^lambda - 1)/lambda, main = paste(""Histograma de"", colnames(booking_norm)[i]), xlab=colnames(booking_norm)[i], freq = FALSE)"
-"0","}"

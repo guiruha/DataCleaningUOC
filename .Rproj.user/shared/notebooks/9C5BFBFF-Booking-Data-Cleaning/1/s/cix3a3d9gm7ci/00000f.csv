@@ -1,5 +1,0 @@
-"0",""
-"0","ggplot(booking_price, aes(comfort_score, max_price)) +"
-"0","  geom_point(color = ""navy"") +"
-"0","  geom_smooth(method = ""lm"", color = ""red"")"
-"0",""

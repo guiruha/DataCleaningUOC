@@ -1,5 +1,0 @@
-"0",""
-"0","booking <- booking %>%"
-"0","  mutate(is_madrid = ifelse(city == ""Madrid"", 1, 0),"
-"0","         is_valencia = ifelse(city == ""Valencia"", 1, 0))"
-"0",""

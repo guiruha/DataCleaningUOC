@@ -1,8 +1,0 @@
-"0","library(GGally)"
-"2","Registered S3 method overwritten by 'GGally':
-  method from   
-  +.gg   ggplot2
-"
-"0","ggcorr(booking)"
-"2","Warning: data in column(s) 'city', 'month_in' are not numeric and were ignored"
-"2","Warning: the standard deviation is zero"

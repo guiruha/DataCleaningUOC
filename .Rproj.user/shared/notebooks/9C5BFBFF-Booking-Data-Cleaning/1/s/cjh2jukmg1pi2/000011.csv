@@ -1,5 +1,0 @@
-"0",""
-"0","booking_price <- booking_numeric %>%"
-"0","  dplyr::select(c(""postal_code"", ""balcony"", ""pet_friendly"", ""latitude"", ""air_conditioning"", ""private_bathroom"", ""free_wifi"", ""staff_score"","
-"0","                  ""swimming_pool"", ""location_score"", ""non_smoking_rooms"", ""mean_flights"", ""length_description"", ""facilities_score"", ""hotel_score"","
-"0","                  ""safe"", ""cleanliness_score"", ""comfort_score"", ""is_madrid"", ""is_valencia"", ""max_price""))"
