@@ -403,7 +403,7 @@ boxplot.stats(booking$max_price)$out
 
 # Seleccionamos con la funci??n "select" de dplyr todas las columnas excepto las que ya hemos limpiado para crear otras, adem??s de aquellasque nos van a ser de poca utilidad.
 booking <- booking %>%
-  dplyr::select(-c("name", "search_date", "hotel_coordinates", "hotel_scores", "check.in", "check.out", "address", "features", "hotel_description", "room_data"))
+  dplyr::select(-c("name", "search_date", "hotel_coordinates", "hotel_scores", "check.in", "check.out", "address", "features", "hotel_description", "room_data", "as.integer(!is.na(NA))"))
 
 # Leemos los datos de vuelos
 flights <- read.csv("avia_tf_apal_linear.csv.gz")
@@ -439,7 +439,7 @@ booking <- booking %>%
   merge(final_flights, by.x = c("city", "month"), by.y = c("city_airp", "month_name"))
 
 # Exportamos los datos a un archivo csv
-write.csv(booking, "data/hotel_data_processed.csv")
+write.csv(booking, "../data/hotel_data_processed.csv", row.names = FALSE)
 
 ########### ANALISIS DE LOS DATOS ###############
 ## Estudio de la correlacion
